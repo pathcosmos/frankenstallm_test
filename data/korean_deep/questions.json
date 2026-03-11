@@ -1,0 +1,802 @@
+[
+  {
+    "id": "honorific_01",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '이거 뭐야?'",
+    "expected_answer": "이것은 무엇인가요?",
+    "answer_type": "llm_judge",
+    "keywords": ["무엇", "인가요", "입니까"]
+  },
+  {
+    "id": "honorific_02",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '밥 먹었어?'",
+    "expected_answer": "식사하셨나요?",
+    "answer_type": "llm_judge",
+    "keywords": ["식사", "하셨", "드셨", "나요"]
+  },
+  {
+    "id": "honorific_03",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 반말로 바꿔주세요: '어디에 가시나요?'",
+    "expected_answer": "어디 가?",
+    "answer_type": "llm_judge",
+    "keywords": ["어디", "가"]
+  },
+  {
+    "id": "honorific_04",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '나 좀 도와줘.'",
+    "expected_answer": "저를 좀 도와주시겠어요?",
+    "answer_type": "llm_judge",
+    "keywords": ["도와주", "시겠", "주세요", "주실"]
+  },
+  {
+    "id": "honorific_05",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 반말로 바꿔주세요: '이것 좀 봐주시겠어요?'",
+    "expected_answer": "이것 좀 봐줘.",
+    "answer_type": "llm_judge",
+    "keywords": ["봐줘", "봐봐"]
+  },
+  {
+    "id": "honorific_06",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '잠깐만 기다려.'",
+    "expected_answer": "잠시만 기다려 주세요.",
+    "answer_type": "llm_judge",
+    "keywords": ["기다려", "주세요", "주시", "잠시"]
+  },
+  {
+    "id": "honorific_07",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 반말로 바꿔주세요: '혹시 시간이 되시면 같이 가실 수 있으신가요?'",
+    "expected_answer": "시간 되면 같이 갈 수 있어?",
+    "answer_type": "llm_judge",
+    "keywords": ["시간", "되면", "같이", "갈 수", "있어"]
+  },
+  {
+    "id": "honorific_08",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '그거 내 거야.'",
+    "expected_answer": "그것은 제 것입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["제", "것", "입니다", "이에요", "거예요"]
+  },
+  {
+    "id": "honorific_09",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 반말로 바꿔주세요: '말씀해 주시면 감사하겠습니다.'",
+    "expected_answer": "말해 주면 고마울 것 같아.",
+    "answer_type": "llm_judge",
+    "keywords": ["말해", "고마"]
+  },
+  {
+    "id": "honorific_10",
+    "category": "존댓말/반말 전환",
+    "question": "다음 문장을 존댓말로 바꿔주세요: '이름이 뭐야?'",
+    "expected_answer": "성함이 어떻게 되시나요?",
+    "answer_type": "llm_judge",
+    "keywords": ["성함", "이름", "되시", "어떻게"]
+  },
+  {
+    "id": "culture_01",
+    "category": "한국 문화 상식",
+    "question": "설날에 먹는 대표적인 전통 음식은 무엇인가요?",
+    "expected_answer": "떡국",
+    "answer_type": "contains",
+    "keywords": ["떡국"]
+  },
+  {
+    "id": "culture_02",
+    "category": "한국 문화 상식",
+    "question": "한글을 창제한 왕은 누구인가요?",
+    "expected_answer": "세종대왕",
+    "answer_type": "contains",
+    "keywords": ["세종", "세종대왕"]
+  },
+  {
+    "id": "culture_03",
+    "category": "한국 문화 상식",
+    "question": "한국의 국기를 무엇이라고 부르나요?",
+    "expected_answer": "태극기",
+    "answer_type": "contains",
+    "keywords": ["태극기"]
+  },
+  {
+    "id": "culture_04",
+    "category": "한국 문화 상식",
+    "question": "한국의 국화(國花)는 무엇인가요?",
+    "expected_answer": "무궁화",
+    "answer_type": "contains",
+    "keywords": ["무궁화"]
+  },
+  {
+    "id": "culture_05",
+    "category": "한국 문화 상식",
+    "question": "추석에 만들어 먹는 대표적인 떡은 무엇인가요?",
+    "expected_answer": "송편",
+    "answer_type": "contains",
+    "keywords": ["송편"]
+  },
+  {
+    "id": "culture_06",
+    "category": "한국 문화 상식",
+    "question": "임진왜란 당시 거북선을 만들어 왜군과 싸운 장군은 누구인가요?",
+    "expected_answer": "이순신",
+    "answer_type": "contains",
+    "keywords": ["이순신"]
+  },
+  {
+    "id": "culture_07",
+    "category": "한국 문화 상식",
+    "question": "한글날은 몇 월 며칠인가요?",
+    "expected_answer": "10월 9일",
+    "answer_type": "contains",
+    "keywords": ["10월 9일", "10월9일", "십월 구일"]
+  },
+  {
+    "id": "culture_08",
+    "category": "한국 문화 상식",
+    "question": "한국의 전통 난방 시스템으로, 바닥 아래로 열기를 전달하는 방식을 무엇이라 하나요?",
+    "expected_answer": "온돌",
+    "answer_type": "contains",
+    "keywords": ["온돌"]
+  },
+  {
+    "id": "culture_09",
+    "category": "한국 문화 상식",
+    "question": "전주의 대표 음식으로 유명한, 여러 가지 나물과 고추장을 비벼 먹는 음식은?",
+    "expected_answer": "비빔밥",
+    "answer_type": "contains",
+    "keywords": ["비빔밥"]
+  },
+  {
+    "id": "culture_10",
+    "category": "한국 문화 상식",
+    "question": "한국 전통 결혼식에서 신랑신부가 마시는 술을 무엇이라 하나요?",
+    "expected_answer": "합근례에서 마시는 술(표주박 술)",
+    "answer_type": "contains",
+    "keywords": ["합근례", "표주박"]
+  },
+  {
+    "id": "culture_11",
+    "category": "한국 문화 상식",
+    "question": "한국의 전통 가옥 형태를 무엇이라 부르나요?",
+    "expected_answer": "한옥",
+    "answer_type": "contains",
+    "keywords": ["한옥"]
+  },
+  {
+    "id": "culture_12",
+    "category": "한국 문화 상식",
+    "question": "제주도의 상징적인 돌 조각상을 무엇이라 하나요?",
+    "expected_answer": "돌하르방",
+    "answer_type": "contains",
+    "keywords": ["돌하르방"]
+  },
+  {
+    "id": "culture_13",
+    "category": "한국 문화 상식",
+    "question": "한국의 3.1절은 어떤 역사적 사건을 기념하는 날인가요?",
+    "expected_answer": "1919년 3.1 독립운동",
+    "answer_type": "contains",
+    "keywords": ["독립운동", "독립만세", "만세운동"]
+  },
+  {
+    "id": "culture_14",
+    "category": "한국 문화 상식",
+    "question": "한국의 전통 현악기로, 12줄로 된 악기의 이름은?",
+    "expected_answer": "가야금",
+    "answer_type": "contains",
+    "keywords": ["가야금"]
+  },
+  {
+    "id": "culture_15",
+    "category": "한국 문화 상식",
+    "question": "조선 시대 과거 시험에서 최종 합격한 사람을 무엇이라 불렀나요?",
+    "expected_answer": "장원급제 (또는 급제자)",
+    "answer_type": "contains",
+    "keywords": ["급제", "장원"]
+  },
+  {
+    "id": "culture_16",
+    "category": "한국 문화 상식",
+    "question": "부산을 대표하는 해변의 이름은 무엇인가요?",
+    "expected_answer": "해운대",
+    "answer_type": "contains",
+    "keywords": ["해운대"]
+  },
+  {
+    "id": "culture_17",
+    "category": "한국 문화 상식",
+    "question": "한국의 광복절은 몇 월 며칠이며, 무엇을 기념하나요?",
+    "expected_answer": "8월 15일, 일본으로부터의 해방을 기념",
+    "answer_type": "contains",
+    "keywords": ["8월 15일", "해방", "광복"]
+  },
+  {
+    "id": "culture_18",
+    "category": "한국 문화 상식",
+    "question": "한국 전통 무예 중 올림픽 정식 종목인 것은?",
+    "expected_answer": "태권도",
+    "answer_type": "contains",
+    "keywords": ["태권도"]
+  },
+  {
+    "id": "culture_19",
+    "category": "한국 문화 상식",
+    "question": "한국에서 아이가 태어난 지 100일이 되면 치르는 잔치를 무엇이라 하나요?",
+    "expected_answer": "백일잔치",
+    "answer_type": "contains",
+    "keywords": ["백일", "백일잔치"]
+  },
+  {
+    "id": "culture_20",
+    "category": "한국 문화 상식",
+    "question": "경주에 있는 신라 시대의 대표적인 천문대 이름은?",
+    "expected_answer": "첨성대",
+    "answer_type": "contains",
+    "keywords": ["첨성대"]
+  },
+  {
+    "id": "idiom_01",
+    "category": "사자성어/관용구",
+    "question": "'일석이조(一石二鳥)'의 뜻은 무엇인가요?",
+    "expected_answer": "돌 하나를 던져 새 두 마리를 잡는다는 뜻으로, 하나의 행동으로 두 가지 이익을 얻음을 의미합니다.",
+    "answer_type": "contains",
+    "keywords": ["하나", "두", "이익", "동시", "새", "돌"]
+  },
+  {
+    "id": "idiom_02",
+    "category": "사자성어/관용구",
+    "question": "'발 없는 말이 천리 간다'는 무슨 뜻인가요?",
+    "expected_answer": "말(언어)은 빠르게 퍼지므로 말조심해야 한다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["말", "소문", "조심", "퍼지", "빠르"]
+  },
+  {
+    "id": "idiom_03",
+    "category": "사자성어/관용구",
+    "question": "'우이독경(牛耳讀經)'의 뜻은 무엇인가요?",
+    "expected_answer": "소 귀에 경 읽기라는 뜻으로, 아무리 말해도 알아듣지 못함을 비유합니다.",
+    "answer_type": "contains",
+    "keywords": ["소", "귀", "경", "알아듣", "소용"]
+  },
+  {
+    "id": "idiom_04",
+    "category": "사자성어/관용구",
+    "question": "'새옹지마(塞翁之馬)'의 의미를 설명하세요.",
+    "expected_answer": "인생의 길흉화복은 예측할 수 없다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["화복", "예측", "좋은", "나쁜", "길흉", "변"]
+  },
+  {
+    "id": "idiom_05",
+    "category": "사자성어/관용구",
+    "question": "'눈 코 뜰 새 없다'는 무슨 의미인가요?",
+    "expected_answer": "매우 바쁘다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["바쁘", "여유", "없"]
+  },
+  {
+    "id": "idiom_06",
+    "category": "사자성어/관용구",
+    "question": "'오십보백보(五十步百步)'의 뜻은 무엇인가요?",
+    "expected_answer": "조금 나은 것 같지만 본질적으로 같다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["비슷", "같", "차이", "본질", "도긴개긴", "큰 차이"]
+  },
+  {
+    "id": "idiom_07",
+    "category": "사자성어/관용구",
+    "question": "다음 상황에 어울리는 사자성어를 하나 골라주세요: '열심히 공부하지 않고 시험에서 좋은 점수를 바라는 사람'",
+    "expected_answer": "수주대토(守株待兔) 또는 연목구어(緣木求魚)",
+    "answer_type": "llm_judge",
+    "keywords": ["수주대토", "연목구어", "요행"]
+  },
+  {
+    "id": "idiom_08",
+    "category": "사자성어/관용구",
+    "question": "'식은 죽 먹기'는 무엇을 의미하나요?",
+    "expected_answer": "매우 쉬운 일을 의미합니다.",
+    "answer_type": "contains",
+    "keywords": ["쉬운", "쉽", "간단"]
+  },
+  {
+    "id": "idiom_09",
+    "category": "사자성어/관용구",
+    "question": "'고진감래(苦盡甘來)'의 뜻을 설명하세요.",
+    "expected_answer": "고생 끝에 즐거움이 온다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["고생", "즐거", "낙", "달", "끝"]
+  },
+  {
+    "id": "idiom_10",
+    "category": "사자성어/관용구",
+    "question": "'등잔 밑이 어둡다'는 무슨 뜻인가요?",
+    "expected_answer": "가까이에 있는 것을 오히려 모른다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["가까", "모르", "정작", "자기"]
+  },
+  {
+    "id": "idiom_11",
+    "category": "사자성어/관용구",
+    "question": "'자업자득(自業自得)'의 뜻은 무엇인가요?",
+    "expected_answer": "자기가 한 일의 결과를 자기가 받는다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["자기", "결과", "받", "스스로", "자신"]
+  },
+  {
+    "id": "idiom_12",
+    "category": "사자성어/관용구",
+    "question": "'하늘의 별 따기'는 어떤 상황을 비유하는 표현인가요?",
+    "expected_answer": "매우 어려운 일을 비유합니다.",
+    "answer_type": "contains",
+    "keywords": ["어렵", "힘들", "불가능", "어려운"]
+  },
+  {
+    "id": "idiom_13",
+    "category": "사자성어/관용구",
+    "question": "'유비무환(有備無患)'의 뜻을 설명하세요.",
+    "expected_answer": "미리 준비하면 걱정할 것이 없다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["준비", "걱정", "대비", "미리"]
+  },
+  {
+    "id": "idiom_14",
+    "category": "사자성어/관용구",
+    "question": "'배보다 배꼽이 크다'는 무슨 뜻인가요?",
+    "expected_answer": "부수적인 것이 주된 것보다 더 크거나 비용이 많이 든다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["부수", "주", "크", "비용", "본래", "더"]
+  },
+  {
+    "id": "idiom_15",
+    "category": "사자성어/관용구",
+    "question": "'온고지신(溫故知新)'의 뜻은 무엇인가요?",
+    "expected_answer": "옛것을 익히고 그것을 통해 새것을 안다는 뜻입니다.",
+    "answer_type": "contains",
+    "keywords": ["옛", "새", "익히", "배우", "알"]
+  },
+  {
+    "id": "spelling_01",
+    "category": "맞춤법/문법",
+    "question": "'됬다'와 '됐다' 중 올바른 맞춤법은 무엇인가요?",
+    "expected_answer": "됐다",
+    "answer_type": "contains",
+    "keywords": ["됐다"]
+  },
+  {
+    "id": "spelling_02",
+    "category": "맞춤법/문법",
+    "question": "'왠지'와 '웬지' 중 '왜인지'의 줄임말로 올바른 것은?",
+    "expected_answer": "왠지",
+    "answer_type": "contains",
+    "keywords": ["왠지"]
+  },
+  {
+    "id": "spelling_03",
+    "category": "맞춤법/문법",
+    "question": "'안'과 '않'의 차이를 설명하고, 빈칸에 알맞은 것을 넣으세요: '나는 그 일을 하지 (   )았다.'",
+    "expected_answer": "'않았다'가 올바릅니다. '안'은 '아니'의 줄임말이고 '않'은 '아니하다'의 줄임말입니다.",
+    "answer_type": "contains",
+    "keywords": ["않"]
+  },
+  {
+    "id": "spelling_04",
+    "category": "맞춤법/문법",
+    "question": "다음 중 올바른 표현은? (1) '금새 도착했다' (2) '금세 도착했다'",
+    "expected_answer": "금세 도착했다",
+    "answer_type": "contains",
+    "keywords": ["금세"]
+  },
+  {
+    "id": "spelling_05",
+    "category": "맞춤법/문법",
+    "question": "'어의없다'와 '어이없다' 중 올바른 맞춤법은?",
+    "expected_answer": "어이없다",
+    "answer_type": "contains",
+    "keywords": ["어이없다"]
+  },
+  {
+    "id": "spelling_06",
+    "category": "맞춤법/문법",
+    "question": "다음 문장에서 띄어쓰기가 올바른 것은? (1) '이 만큼' (2) '이만큼'",
+    "expected_answer": "이만큼",
+    "answer_type": "contains",
+    "keywords": ["이만큼"]
+  },
+  {
+    "id": "spelling_07",
+    "category": "맞춤법/문법",
+    "question": "'뵈요'와 '봬요' 중 '다시 ( ) '에 들어갈 올바른 형태는?",
+    "expected_answer": "봬요 (뵈어요의 줄임)",
+    "answer_type": "contains",
+    "keywords": ["봬요"]
+  },
+  {
+    "id": "spelling_08",
+    "category": "맞춤법/문법",
+    "question": "'몇 일'과 '며칠' 중 맞는 표현은?",
+    "expected_answer": "며칠",
+    "answer_type": "contains",
+    "keywords": ["며칠"]
+  },
+  {
+    "id": "spelling_09",
+    "category": "맞춤법/문법",
+    "question": "'-(으)로서'와 '-(으)로써'의 차이를 설명하고, 빈칸에 알맞은 것을 넣으세요: '연필(    ) 글씨를 썼다.'",
+    "expected_answer": "'로써'가 올바릅니다. '로서'는 자격·신분, '로써'는 수단·도구를 나타냅니다.",
+    "answer_type": "contains",
+    "keywords": ["로써"]
+  },
+  {
+    "id": "spelling_10",
+    "category": "맞춤법/문법",
+    "question": "'가르치다'와 '가리키다'의 차이를 설명하세요.",
+    "expected_answer": "'가르치다'는 교육하다(teach)의 의미이고, '가리키다'는 손가락 등으로 방향이나 대상을 지시하다(point)의 의미입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["가르치다", "교육", "가리키다", "지시", "방향"]
+  },
+  {
+    "id": "spelling_11",
+    "category": "맞춤법/문법",
+    "question": "'맞히다'와 '맞추다'의 차이를 설명하세요.",
+    "expected_answer": "'맞히다'는 정답을 맞히다(적중), '맞추다'는 서로 비교하거나 조립하다의 의미입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["맞히다", "정답", "맞추다", "비교", "조립"]
+  },
+  {
+    "id": "spelling_12",
+    "category": "맞춤법/문법",
+    "question": "다음 중 올바른 조사 사용은? (1) '사과를 먹었다' (2) '사과을 먹었다'",
+    "expected_answer": "사과를 먹었다",
+    "answer_type": "contains",
+    "keywords": ["사과를"]
+  },
+  {
+    "id": "spelling_13",
+    "category": "맞춤법/문법",
+    "question": "'데'와 '대'의 차이를 설명하세요. '걔가 간(   )'에 알맞은 것은?",
+    "expected_answer": "'대'가 올바릅니다. '대'는 '다고 해'의 줄임(간접인용)이고, '데'는 경험이나 장소를 나타냅니다.",
+    "answer_type": "contains",
+    "keywords": ["대"]
+  },
+  {
+    "id": "spelling_14",
+    "category": "맞춤법/문법",
+    "question": "'담에 보자'에서 '담에'의 올바른 표기는?",
+    "expected_answer": "'다음에'가 올바른 표기입니다. '담에'는 구어체 줄임말입니다.",
+    "answer_type": "contains",
+    "keywords": ["다음에"]
+  },
+  {
+    "id": "spelling_15",
+    "category": "맞춤법/문법",
+    "question": "'의'의 발음은 단어 위치에 따라 달라집니다. '희망의 나라'에서 '의'는 어떻게 발음하나요?",
+    "expected_answer": "'에'로 발음할 수 있습니다. 조사 '의'는 [에]로 발음이 허용됩니다.",
+    "answer_type": "contains",
+    "keywords": ["에"]
+  },
+  {
+    "id": "summary_01",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n서울시는 2024년부터 대중교통 요금을 인상한다고 발표했다. 버스 기본요금은 1,200원에서 1,500원으로, 지하철은 1,250원에서 1,400원으로 각각 오른다. 시 관계자는 물가 상승과 운영비 증가를 인상 이유로 설명하며, 취약계층에 대한 할인 정책은 유지한다고 밝혔다.",
+    "expected_answer": "서울시가 물가 상승 등을 이유로 2024년부터 버스와 지하철 요금을 인상하되, 취약계층 할인은 유지한다고 발표했다.",
+    "answer_type": "llm_judge",
+    "keywords": ["서울", "대중교통", "요금", "인상"]
+  },
+  {
+    "id": "summary_02",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n삼성전자가 차세대 반도체 공정 개발에 성공했다고 발표했다. 이번에 개발된 2나노 공정은 기존 3나노 대비 전력 소모를 25% 줄이면서도 성능은 12% 향상되었다. 회사 측은 2025년 하반기부터 양산에 돌입할 계획이라고 밝혔다.",
+    "expected_answer": "삼성전자가 전력 소모와 성능을 크게 개선한 2나노 반도체 공정을 개발하고, 2025년 하반기 양산을 예고했다.",
+    "answer_type": "llm_judge",
+    "keywords": ["삼성", "반도체", "2나노", "양산"]
+  },
+  {
+    "id": "summary_03",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n한국은행이 기준금리를 3.50%에서 3.25%로 인하했다. 이는 2년 만에 처음 있는 금리 인하로, 경기 둔화 우려와 물가 안정 추세를 고려한 결정이다. 전문가들은 추가 인하 가능성도 있다고 전망했다.",
+    "expected_answer": "한국은행이 경기 둔화와 물가 안정을 고려해 2년 만에 기준금리를 0.25%포인트 인하했으며, 추가 인하 가능성도 점쳐진다.",
+    "answer_type": "llm_judge",
+    "keywords": ["한국은행", "금리", "인하"]
+  },
+  {
+    "id": "summary_04",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n정부가 저출산 대책으로 신혼부부 주거 지원을 대폭 확대한다. 결혼 7년 이내 부부에게 최대 3억 원까지 저금리 대출을 제공하며, 공공임대주택 공급도 늘린다. 또한 육아휴직 급여를 현행 대비 50% 인상하여 부모의 경제적 부담을 줄이겠다고 밝혔다.",
+    "expected_answer": "정부가 저출산 대응으로 신혼부부 저금리 대출 확대, 공공임대 확충, 육아휴직 급여 인상 등을 포함한 종합 주거·육아 지원 대책을 발표했다.",
+    "answer_type": "llm_judge",
+    "keywords": ["저출산", "신혼", "주거", "육아"]
+  },
+  {
+    "id": "summary_05",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n올해 여름 한반도에 기록적인 폭염이 찾아왔다. 서울의 최고 기온이 39.1도를 기록하며 역대 최고치를 경신했고, 전국적으로 온열 질환자가 2,300명을 넘어섰다. 기상청은 지구온난화의 영향으로 이러한 극한 기상이 더 자주 발생할 것이라 경고했다.",
+    "expected_answer": "역대 최고 기온을 경신하는 기록적 폭염이 한반도를 덮쳐 온열 질환자가 급증한 가운데, 기상청은 온난화로 극한 기상이 잦아질 것이라 경고했다.",
+    "answer_type": "llm_judge",
+    "keywords": ["폭염", "기온", "온열 질환", "온난화"]
+  },
+  {
+    "id": "summary_06",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 세 줄로 요약하세요:\n\n현대자동차가 전기차 전용 플랫폼을 기반으로 한 신차 '아이오닉 7'을 공개했다. 이 차량은 1회 충전으로 600km 이상 주행이 가능하며, 18분 만에 10%에서 80%까지 급속 충전할 수 있다. 가격은 5,500만 원부터 시작하며, 국내에서는 올해 하반기에 출시될 예정이다. 현대차는 이 모델을 통해 글로벌 전기차 시장에서 점유율을 확대하겠다는 목표를 밝혔다.",
+    "expected_answer": "1. 현대차가 전기차 전용 플랫폼 기반의 '아이오닉 7'을 공개했다.\n2. 600km 이상 주행거리와 18분 급속충전이 특징이며, 가격은 5,500만 원부터이다.\n3. 올해 하반기 국내 출시를 통해 글로벌 전기차 시장 점유율 확대를 목표로 한다.",
+    "answer_type": "llm_judge",
+    "keywords": ["현대", "아이오닉", "전기차", "600km"]
+  },
+  {
+    "id": "summary_07",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n카카오가 인공지능 비서 서비스를 대폭 업그레이드한다고 밝혔다. 새로운 AI 비서는 한국어 자연어 처리 성능을 크게 높여 일상 대화는 물론 업무 보조까지 가능하다. 카카오톡 내에서 바로 사용할 수 있어 별도 앱 설치가 필요 없으며, 내년 1분기 정식 출시 예정이다.",
+    "expected_answer": "카카오가 한국어 성능을 대폭 개선한 AI 비서를 카카오톡에 탑재해 내년 1분기에 출시할 예정이다.",
+    "answer_type": "llm_judge",
+    "keywords": ["카카오", "AI", "비서", "카카오톡"]
+  },
+  {
+    "id": "summary_08",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n대한항공이 아시아나항공 인수를 최종 마무리했다. 2020년 인수 발표 이후 4년 만에 EU, 미국 등 주요국 경쟁당국의 승인을 모두 받았다. 합병 후 대한항공은 세계 10위권 항공사로 도약하며, 국제 노선 300개 이상을 운영하게 된다.",
+    "expected_answer": "대한항공이 4년 만에 주요국 승인을 받아 아시아나항공 인수를 완료하고, 세계 10위권 항공사로 도약한다.",
+    "answer_type": "llm_judge",
+    "keywords": ["대한항공", "아시아나", "인수", "합병"]
+  },
+  {
+    "id": "summary_09",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n서울 강남구에서 아파트 재건축 사업이 본격적으로 추진된다. 대치동 은마아파트를 포함한 5개 단지가 안전진단을 통과했으며, 총 1만 2천 가구가 새로 지어질 예정이다. 전문가들은 이번 재건축으로 강남 부동산 시장에 큰 변화가 예상된다고 분석했다.",
+    "expected_answer": "강남 은마아파트 등 5개 단지가 안전진단을 통과해 1만 2천 가구 규모의 재건축이 본격 추진되며, 부동산 시장 변화가 예상된다.",
+    "answer_type": "llm_judge",
+    "keywords": ["강남", "재건축", "은마", "아파트"]
+  },
+  {
+    "id": "summary_10",
+    "category": "뉴스 스타일 요약",
+    "question": "다음 문단을 한 문장으로 요약하세요:\n\n한국 영화 '파묘'가 개봉 10일 만에 관객 500만 명을 돌파했다. 이는 올해 개봉한 한국 영화 중 가장 빠른 속도이며, 해외에서도 높은 관심을 받고 있다. 북미 시장에서는 한국 영화 역대 3위의 오프닝 기록을 세우며, K-콘텐츠의 글로벌 영향력을 다시 한번 입증했다.",
+    "expected_answer": "영화 '파묘'가 10일 만에 관객 500만 명을 돌파하고 북미에서도 역대 3위 오프닝을 기록하며 K-콘텐츠의 위상을 확인시켰다.",
+    "answer_type": "llm_judge",
+    "keywords": ["파묘", "500만", "관객", "북미"]
+  },
+  {
+    "id": "emotion_01",
+    "category": "감정/뉘앙스",
+    "question": "다음 두 문장의 뉘앙스 차이를 설명하세요: '괜찮아' vs '괜찮으시다면'",
+    "expected_answer": "'괜찮아'는 친밀한 관계에서 상대를 안심시키거나 수락하는 표현이고, '괜찮으시다면'은 상대의 의사를 존중하며 조심스럽게 제안하거나 양해를 구하는 표현입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["친밀", "존중", "격식", "제안", "양해"]
+  },
+  {
+    "id": "emotion_02",
+    "category": "감정/뉘앙스",
+    "question": "다음 문장의 감정 톤을 분석하세요: '그래, 네가 알아서 해.'",
+    "expected_answer": "실망, 체념, 또는 약간의 화가 섞인 표현입니다. 표면적으로는 상대에게 자율성을 주지만, 실제로는 관여하기를 포기했다는 뉘앙스가 있습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["실망", "체념", "포기", "화", "냉소"]
+  },
+  {
+    "id": "emotion_03",
+    "category": "감정/뉘앙스",
+    "question": "'아니, 됐어'와 '아뇨, 괜찮습니다'의 뉘앙스 차이는 무엇인가요?",
+    "expected_answer": "'아니, 됐어'는 친밀한 관계에서 다소 단호하게 거절하는 표현이고, '아뇨, 괜찮습니다'는 격식을 갖춰 정중하게 사양하는 표현입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["단호", "거절", "정중", "격식"]
+  },
+  {
+    "id": "emotion_04",
+    "category": "감정/뉘앙스",
+    "question": "다음 문장의 숨겨진 의미를 설명하세요: '밥은 먹고 다니니?'",
+    "expected_answer": "상대방의 안부를 걱정하는 표현으로, 단순히 식사 여부가 아니라 건강과 생활 전반을 걱정하는 따뜻한 표현입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["걱정", "안부", "건강", "따뜻", "관심"]
+  },
+  {
+    "id": "emotion_05",
+    "category": "감정/뉘앙스",
+    "question": "'잘 됐네'가 긍정적 의미와 비꼬는 의미로 각각 쓰이는 맥락을 설명하세요.",
+    "expected_answer": "긍정적 맥락: 상대의 좋은 소식에 기뻐하며 축하할 때. 비꼬는 맥락: 상대에게 안 좋은 일이 생겼을 때 쾌재를 부르거나, 자신이 피해를 받았을 때 냉소적으로 말할 때.",
+    "answer_type": "llm_judge",
+    "keywords": ["축하", "기쁨", "비꼬", "냉소", "맥락"]
+  },
+  {
+    "id": "emotion_06",
+    "category": "감정/뉘앙스",
+    "question": "'수고하셨습니다'와 '고생하셨습니다'의 뉘앙스 차이는?",
+    "expected_answer": "'수고하셨습니다'는 일반적인 노고에 대한 인사로 가볍게 쓰이고, '고생하셨습니다'는 특히 힘든 일을 겪었을 때 더 깊은 위로와 공감의 뉘앙스를 담고 있습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["노고", "위로", "힘든", "공감"]
+  },
+  {
+    "id": "emotion_07",
+    "category": "감정/뉘앙스",
+    "question": "다음 문장이 전달하는 감정을 분석하세요: '좋을 대로 하세요.'",
+    "expected_answer": "화가 나거나 답답한 감정을 담은 표현으로, 표면적으로는 상대의 선택을 존중하는 것 같지만 실제로는 대화를 단절하고 싶은 감정이 담겨 있습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["화", "답답", "단절", "불만"]
+  },
+  {
+    "id": "emotion_08",
+    "category": "감정/뉘앙스",
+    "question": "'아이고'라는 감탄사가 사용되는 다양한 맥락을 세 가지 이상 설명하세요.",
+    "expected_answer": "1) 힘들거나 피곤할 때 (탄식), 2) 반가운 사람을 만났을 때 (반가움), 3) 놀라거나 안타까울 때 (놀람/안타까움), 4) 어른이 아이를 귀여워할 때 (애정) 등",
+    "answer_type": "llm_judge",
+    "keywords": ["피곤", "반가", "놀라", "안타까", "애정"]
+  },
+  {
+    "id": "emotion_09",
+    "category": "감정/뉘앙스",
+    "question": "'그러게요'와 '그렇군요'의 뉘앙스 차이를 설명하세요.",
+    "expected_answer": "'그러게요'는 상대의 말에 동의하며 공감을 표현하는 것이고, '그렇군요'는 새로운 정보를 받아들이며 이해했다는 뉘앙스입니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["동의", "공감", "이해", "새로운", "정보"]
+  },
+  {
+    "id": "emotion_10",
+    "category": "감정/뉘앙스",
+    "question": "직장 상사가 '이거 언제까지 할 수 있어?'라고 물었을 때, 이 질문에 담긴 뉘앙스는?",
+    "expected_answer": "단순한 일정 확인일 수도 있지만, 은근히 빨리 해달라는 독촉이나 현재 진행 속도에 대한 불만이 담겨 있을 수 있습니다. 맥락에 따라 압박의 의미가 포함됩니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["독촉", "압박", "일정", "불만", "빨리"]
+  },
+  {
+    "id": "number_01",
+    "category": "숫자/단위",
+    "question": "1억 2천만을 아라비아 숫자로 쓰면?",
+    "expected_answer": "120,000,000",
+    "answer_type": "contains",
+    "keywords": ["120000000", "120,000,000"]
+  },
+  {
+    "id": "number_02",
+    "category": "숫자/단위",
+    "question": "2024년 3월 15일을 영어로 쓰면?",
+    "expected_answer": "March 15, 2024",
+    "answer_type": "contains",
+    "keywords": ["March 15", "March 15, 2024", "15 March 2024"]
+  },
+  {
+    "id": "number_03",
+    "category": "숫자/단위",
+    "question": "다음 빈칸에 알맞은 수 분류사(단위)를 넣으세요: '고양이 세 (   )'",
+    "expected_answer": "마리",
+    "answer_type": "contains",
+    "keywords": ["마리"]
+  },
+  {
+    "id": "number_04",
+    "category": "숫자/단위",
+    "question": "다음 빈칸에 알맞은 수 분류사를 넣으세요: '종이 다섯 (   )'",
+    "expected_answer": "장",
+    "answer_type": "contains",
+    "keywords": ["장"]
+  },
+  {
+    "id": "number_05",
+    "category": "숫자/단위",
+    "question": "한국어에서 '만(萬)'은 영어의 어떤 숫자에 해당하나요?",
+    "expected_answer": "10,000 (ten thousand)",
+    "answer_type": "contains",
+    "keywords": ["10000", "10,000", "ten thousand"]
+  },
+  {
+    "id": "number_06",
+    "category": "숫자/단위",
+    "question": "35,000,000원을 한국어 단위로 읽으면?",
+    "expected_answer": "삼천오백만 원",
+    "answer_type": "contains",
+    "keywords": ["삼천오백만", "3천5백만", "3천500만", "3500만"]
+  },
+  {
+    "id": "number_07",
+    "category": "숫자/단위",
+    "question": "한국 나이와 만 나이의 차이를 설명하세요. 2000년 1월생이 2024년 6월 기준 만 나이와 (과거 기준) 한국 나이를 구하세요.",
+    "expected_answer": "만 나이는 24세, 한국 나이는 25세입니다. 한국 나이는 태어나면서 1살이고 매년 1월 1일에 한 살씩 더합니다.",
+    "answer_type": "contains",
+    "keywords": ["24", "25"]
+  },
+  {
+    "id": "number_08",
+    "category": "숫자/단위",
+    "question": "다음 빈칸에 알맞은 수 분류사를 넣으세요: '자동차 한 (   )'",
+    "expected_answer": "대",
+    "answer_type": "contains",
+    "keywords": ["대"]
+  },
+  {
+    "id": "number_09",
+    "category": "숫자/단위",
+    "question": "고유어 수사로 '스물다섯'을 아라비아 숫자로 쓰면?",
+    "expected_answer": "25",
+    "answer_type": "contains",
+    "keywords": ["25"]
+  },
+  {
+    "id": "number_10",
+    "category": "숫자/단위",
+    "question": "1조 5천억을 아라비아 숫자로 쓰면?",
+    "expected_answer": "1,500,000,000,000",
+    "answer_type": "contains",
+    "keywords": ["1500000000000", "1,500,000,000,000"]
+  },
+  {
+    "id": "respect_01",
+    "category": "존칭 체계",
+    "question": "직장에서 상사에게 점심을 함께 먹자고 제안할 때 적절한 표현은 무엇인가요?",
+    "expected_answer": "부장님, 혹시 괜찮으시면 점심 같이 하시겠어요?",
+    "answer_type": "llm_judge",
+    "keywords": ["님", "같이", "하시", "겠"]
+  },
+  {
+    "id": "respect_02",
+    "category": "존칭 체계",
+    "question": "'님', '씨', '선생님' 중 처음 만난 비즈니스 상대에게 가장 적합한 호칭은?",
+    "expected_answer": "'님' 또는 '선생님'이 적합합니다. '씨'는 격식이 낮아 첫 만남의 비즈니스 상대에게는 적합하지 않을 수 있습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["님", "선생님"]
+  },
+  {
+    "id": "respect_03",
+    "category": "존칭 체계",
+    "question": "한국 직장에서 '수고하세요'를 상사에게 말해도 될까요? 이유를 설명하세요.",
+    "expected_answer": "'수고하세요'는 윗사람이 아랫사람에게 하는 말이므로, 상사에게는 적절하지 않습니다. 대신 '먼저 들어가겠습니다' 또는 '내일 뵙겠습니다' 등을 사용합니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["윗사람", "아랫사람", "적절하지 않", "부적절"]
+  },
+  {
+    "id": "respect_04",
+    "category": "존칭 체계",
+    "question": "고객에게 전화를 걸어 문의에 답변할 때 적절한 시작 인사는?",
+    "expected_answer": "안녕하세요, OOO 고객님. OO회사 OOO입니다. 문의해 주신 건에 대해 안내 드리겠습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["안녕하세요", "고객님", "안내", "드리"]
+  },
+  {
+    "id": "respect_05",
+    "category": "존칭 체계",
+    "question": "교수님께 이메일로 면담을 요청할 때 적절한 문장을 작성하세요.",
+    "expected_answer": "교수님, 안녕하세요. OO학과 OOO입니다. 다름이 아니라 논문 관련하여 면담을 요청드리고 싶습니다. 교수님 시간이 괜찮으신 때가 있으시면 말씀해 주시면 감사하겠습니다.",
+    "answer_type": "llm_judge",
+    "keywords": ["교수님", "면담", "요청", "감사", "시간"]
+  },
+  {
+    "id": "respect_06",
+    "category": "존칭 체계",
+    "question": "한국에서 상대방의 부모를 높여서 부를 때 아버지와 어머니를 각각 어떻게 호칭하나요?",
+    "expected_answer": "아버님, 어머님으로 호칭합니다.",
+    "answer_type": "contains",
+    "keywords": ["아버님", "어머님"]
+  },
+  {
+    "id": "respect_07",
+    "category": "존칭 체계",
+    "question": "한국어에서 '먹다'의 높임말과 겸양어를 각각 쓰세요.",
+    "expected_answer": "높임말(주체높임): 잡수시다/드시다, 겸양어(객체높임): 올리다/드리다",
+    "answer_type": "contains",
+    "keywords": ["드시다", "잡수시다"]
+  },
+  {
+    "id": "respect_08",
+    "category": "존칭 체계",
+    "question": "결혼식 축의금 봉투에 쓰는 일반적인 문구는?",
+    "expected_answer": "축 결혼(祝 結婚) 또는 축 화혼(祝 華婚)",
+    "answer_type": "contains",
+    "keywords": ["축 결혼", "축결혼", "축 화혼"]
+  },
+  {
+    "id": "respect_09",
+    "category": "존칭 체계",
+    "question": "한국어에서 '주다'를 상사에게 쓸 때 적절한 표현은? 예문을 만들어 보세요.",
+    "expected_answer": "'드리다'를 사용합니다. 예: '보고서를 드리겠습니다.'",
+    "answer_type": "contains",
+    "keywords": ["드리"]
+  },
+  {
+    "id": "respect_10",
+    "category": "존칭 체계",
+    "question": "한국에서 장례식에 가서 유가족에게 하는 일반적인 위로 인사는?",
+    "expected_answer": "삼가 고인의 명복을 빕니다.",
+    "answer_type": "contains",
+    "keywords": ["명복", "삼가", "빕니다"]
+  }
+]

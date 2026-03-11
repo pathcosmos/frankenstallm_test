@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# OS
+.DS_Store
+
+# 대용량 결과 (선택적 포함 — 체크포인트는 포함)
+# results/ 는 포함시킴 (현재 진행 중인 평가 결과 보존)
+
+# Ollama 모델 (GGUF 파일은 너무 큼)
+*.gguf
+
+# 로그
+*.log
+/tmp/

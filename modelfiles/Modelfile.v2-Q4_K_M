@@ -1,0 +1,15 @@
+# FRANKENSTALLM 3B v2 — Q4_K_M 양자화
+# 사용법:
+#   1. <PATH_TO_GGUF>를 실제 GGUF 파일 경로로 교체
+#   2. ollama create frankenstallm-3b-v2-Q4_K_M -f modelfiles/Modelfile.v2-Q4_K_M
+
+FROM <PATH_TO_GGUF>/frankenstallm-3b-v2-Q4_K_M.gguf
+TEMPLATE {{ .Prompt }}
+SYSTEM 당신은 FRANKENSTALLM, 한국어에 특화된 AI 어시스턴트입니다. 정확하고 자연스러운 한국어로 답변해주세요.
+PARAMETER num_ctx 4096
+PARAMETER num_predict 512
+PARAMETER repeat_penalty 1.2
+PARAMETER stop </s>
+PARAMETER temperature 0.7
+PARAMETER top_k 50
+PARAMETER top_p 0.9

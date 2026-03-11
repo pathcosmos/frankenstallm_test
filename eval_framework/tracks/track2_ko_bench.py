@@ -1,0 +1,681 @@
+"""
+Track 2: Ko-Bench 스타일 멀티턴 평가
+
+8개 카테고리 x 10개 질문 = 80개 질문, 2-turn 형식
+카테고리: Writing(작문), Roleplay(역할극), Reasoning(추론), Math(수학),
+          Coding(코딩), Extraction(추출), STEM(과학), Humanities(인문)
+
+Reference: MT-Bench, Ko-Bench (davidkim205/ko-bench)
+"""
+
+import time
+from datetime import datetime
+from typing import Optional
+
+from eval_framework import config
+from eval_framework import runner
+from eval_framework import judge
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 카테고리별 채점 기준
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CATEGORY_CRITERIA: dict[str, dict[str, str]] = {
+    "writing": {
+        "문체": "글의 톤, 어휘 선택, 문장 리듬이 주제에 어울리는가",
+        "구조": "서론-본론-결론 등 글의 흐름과 구성이 논리적인가",
+        "창의성": "독창적 표현, 비유, 참신한 시각이 드러나는가",
+    },
+    "roleplay": {
+        "캐릭터 일관성": "설정된 역할의 성격, 말투, 지식 범위를 일관되게 유지하는가",
+        "몰입도": "대화가 자연스럽고 상황에 맞는 반응을 보이는가",
+    },
+    "reasoning": {
+        "논리적 단계": "추론 과정이 단계별로 명확히 제시되는가",
+        "정확성": "최종 결론이 논리적으로 타당하고 정확한가",
+    },
+    "math": {
+        "풀이 과정": "수학적 풀이가 단계별로 정확히 서술되는가",
+        "정답률": "최종 답이 올바른가",
+    },
+    "coding": {
+        "기능 정확성": "코드가 요구 사항을 올바르게 구현하는가",
+        "코드 품질": "가독성, 효율성, 적절한 구조를 갖추었는가",
+    },
+    "extraction": {
+        "정보 정확도": "추출한 정보가 원문의 내용과 정확히 일치하는가",
+        "형식 준수": "요청된 출력 형식을 정확히 따르는가",
+    },
+    "stem": {
+        "개념 정확성": "과학적 개념과 용어를 정확히 사용하는가",
+        "설명력": "비전문가도 이해할 수 있도록 명확히 설명하는가",
+    },
+    "humanities": {
+        "깊이": "주제에 대한 심층적 이해와 분석이 드러나는가",
+        "맥락 이해": "역사적·문화적·사회적 배경을 적절히 고려하는가",
+    },
+}
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 인라인 테스트 데이터 — 카테고리별 10개 질문 (2-turn)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+QUESTIONS: dict[str, list[dict[str, str]]] = {
+    # ── Writing (작문) ──────────────────────────────────────────────────────
+    "writing": [
+        {
+            "turn1": "봄을 주제로 짧은 수필을 써주세요.",
+            "turn2": "위 수필을 가을 버전으로 바꿔 써주세요.",
+        },
+        {
+            "turn1": "비 오는 날의 풍경을 묘사하는 시를 써주세요.",
+            "turn2": "같은 시를 눈 오는 날 버전으로 다시 써주세요.",
+        },
+        {
+            "turn1": "고향을 떠나는 사람의 심정을 담은 편지를 써주세요.",
+            "turn2": "이번에는 고향에 돌아온 날의 감정으로 답장을 써주세요.",
+        },
+        {
+            "turn1": "새벽 시장의 활기찬 모습을 묘사하는 짧은 글을 써주세요.",
+            "turn2": "위 글을 폐장 직전 한산한 저녁 시장의 분위기로 바꿔주세요.",
+        },
+        {
+            "turn1": "첫사랑의 기억을 담은 짧은 에세이를 써주세요.",
+            "turn2": "같은 사건을 20년 후 다시 회상하는 관점으로 다시 써주세요.",
+        },
+        {
+            "turn1": "도시의 밤하늘을 바라보며 느끼는 감정을 수필로 써주세요.",
+            "turn2": "위 수필의 배경을 시골 산속 밤하늘로 바꿔 다시 써주세요.",
+        },
+        {
+            "turn1": "할머니의 손맛이 담긴 음식에 대한 글을 써주세요.",
+            "turn2": "위 글을 음식 평론가의 리뷰 형식으로 바꿔 써주세요.",
+        },
+        {
+            "turn1": "졸업식 날의 감정을 담은 일기를 써주세요.",
+            "turn2": "같은 날을 옆에서 지켜보던 부모님의 시점으로 다시 써주세요.",
+        },
+        {
+            "turn1": "오래된 골목길을 걸으며 느끼는 감상을 짧은 글로 써주세요.",
+            "turn2": "위 글을 재개발 후 새 아파트 단지가 된 모습에 대한 글로 바꿔주세요.",
+        },
+        {
+            "turn1": "바다를 처음 본 아이의 시점에서 짧은 글을 써주세요.",
+            "turn2": "같은 바다를 어부 할아버지의 시점에서 다시 써주세요.",
+        },
+    ],
+
+    # ── Roleplay (역할극) ──────────────────────────────────────────────────
+    "roleplay": [
+        {
+            "turn1": "당신은 조선시대 선비입니다. 오늘 과거시험을 앞둔 심정을 말해주세요.",
+            "turn2": "과거시험에서 떨어졌습니다. 어떤 심정이고 앞으로 어떻게 하실 건가요?",
+        },
+        {
+            "turn1": "당신은 화성에 처음 도착한 우주 비행사입니다. 지구에 첫 보고를 해주세요.",
+            "turn2": "화성에서 예상치 못한 생명체 흔적을 발견했습니다. 긴급 보고를 해주세요.",
+        },
+        {
+            "turn1": "당신은 백년 된 고택에 사는 도깨비입니다. 자기소개를 해주세요.",
+            "turn2": "고택이 곧 철거된다는 소식을 들었습니다. 어떻게 대응하시겠습니까?",
+        },
+        {
+            "turn1": "당신은 조선시대 궁중 요리사(숙수)입니다. 오늘 왕에게 올릴 수라상을 설명해주세요.",
+            "turn2": "왕이 음식이 맛없다며 노하셨습니다. 어떻게 수습하시겠습니까?",
+        },
+        {
+            "turn1": "당신은 1920년대 경성의 신문기자입니다. 오늘 취재할 사건을 보도해주세요.",
+            "turn2": "일제 검열관이 기사를 삭제하라고 합니다. 어떻게 대응하시겠습니까?",
+        },
+        {
+            "turn1": "당신은 심해 탐사 잠수정의 AI 시스템입니다. 현재 상태를 보고하세요.",
+            "turn2": "외부 압력이 위험 수준에 도달했습니다. 승무원에게 상황을 브리핑하세요.",
+        },
+        {
+            "turn1": "당신은 조선시대 의녀입니다. 오늘 진료한 환자에 대해 이야기해주세요.",
+            "turn2": "전염병이 마을에 퍼지기 시작했습니다. 어떤 조치를 취하시겠습니까?",
+        },
+        {
+            "turn1": "당신은 타임머신을 발명한 과학자입니다. 첫 시간 여행 경험을 말해주세요.",
+            "turn2": "과거를 바꾼 것이 현재에 영향을 미쳤습니다. 어떤 변화가 생겼고 어떻게 해결할 건가요?",
+        },
+        {
+            "turn1": "당신은 500살 된 산신령입니다. 요즘 등산객들에 대해 어떻게 생각하시나요?",
+            "turn2": "개발업자가 산에 리조트를 짓겠다고 합니다. 어떻게 하시겠습니까?",
+        },
+        {
+            "turn1": "당신은 세종대왕의 측근 학자입니다. 한글 창제 과정에 참여한 소감을 말해주세요.",
+            "turn2": "일부 대신들이 한글 창제에 반대하고 있습니다. 그들을 설득해 보세요.",
+        },
+    ],
+
+    # ── Reasoning (추론) ──────────────────────────────────────────────────
+    "reasoning": [
+        {
+            "turn1": "A, B, C 세 사람이 달리기를 합니다. A는 B보다 빠르고, C는 A보다 느립니다. B와 C 중 누가 더 빠른지 알 수 있나요?",
+            "turn2": "만약 D가 C보다 빠르고 B보다 느리다면, 네 사람의 순위는?",
+        },
+        {
+            "turn1": "어떤 마을에서 모든 이발사는 자기 머리를 스스로 깎지 않는 사람들의 머리만 깎아줍니다. 이 이발사는 자기 머리를 누가 깎을까요?",
+            "turn2": "이 역설을 해결할 수 있는 현실적인 방법 세 가지를 제시해주세요.",
+        },
+        {
+            "turn1": "5명이 원탁에 앉아 있습니다. 민수는 영희 옆에, 철수는 민수 맞은편에 앉아 있습니다. 지영이가 철수 옆에 앉아 있다면, 수진이의 위치는?",
+            "turn2": "지영이와 수진이의 자리를 바꾸면, 민수 맞은편에 누가 앉게 되나요?",
+        },
+        {
+            "turn1": "농부가 여우, 닭, 옥수수를 강 건너로 옮겨야 합니다. 배에는 한 번에 하나만 실을 수 있고, 여우는 닭을 잡아먹고 닭은 옥수수를 먹습니다. 어떻게 해야 하나요?",
+            "turn2": "조건을 바꿔서 배에 두 가지를 실을 수 있지만 네 번만 왕복할 수 있다면, 최적 해법은?",
+        },
+        {
+            "turn1": "거짓말쟁이 섬과 진실말 섬 사이의 갈림길에 한 주민이 서 있습니다. 한 번의 질문으로 진실말 섬으로 가는 길을 알아내려면 어떻게 물어야 할까요?",
+            "turn2": "만약 주민이 무작위로 거짓말과 진실을 섞는 '변덕쟁이'라면, 두 번의 질문으로 길을 찾을 수 있을까요?",
+        },
+        {
+            "turn1": "A는 B의 아버지이고, C는 A의 형제입니다. D는 C의 딸입니다. B와 D의 관계는 무엇인가요?",
+            "turn2": "E가 B의 배우자이고, F가 E의 어머니라면, F와 A는 어떤 관계인가요?",
+        },
+        {
+            "turn1": "상자 안에 빨간 공 3개, 파란 공 5개, 초록 공 2개가 있습니다. 눈을 감고 공을 꺼낼 때, 같은 색 공 2개를 확실히 얻으려면 최소 몇 개를 꺼내야 하나요?",
+            "turn2": "조건을 바꿔서 세 가지 색 공을 모두 하나씩 확보하려면 최소 몇 개를 꺼내야 하나요?",
+        },
+        {
+            "turn1": "회사에서 A 팀은 월·수·금, B 팀은 화·목에 회의합니다. 모든 팀원이 참석하는 전체 회의를 잡으려면, 어떤 요일이 불가능한가요? 이유를 설명하세요.",
+            "turn2": "C 팀이 추가되어 월·화·목에 회의한다면, 세 팀 모두 참석 가능한 요일은?",
+        },
+        {
+            "turn1": "100층 건물에서 달걀이 깨지는 최소 층을 찾아야 합니다. 달걀 2개로 최소 몇 번의 시도가 필요한가요?",
+            "turn2": "달걀이 3개라면 최소 시도 횟수는 어떻게 달라지나요? 전략을 설명하세요.",
+        },
+        {
+            "turn1": "시계의 시침과 분침이 하루 24시간 동안 정확히 몇 번 겹치나요?",
+            "turn2": "시침, 분침, 초침 세 바늘이 모두 겹치는 횟수는 하루에 몇 번인가요?",
+        },
+    ],
+
+    # ── Math (수학) ──────────────────────────────────────────────────────
+    "math": [
+        {
+            "turn1": "연속하는 세 짝수의 합이 78일 때, 세 수를 구하세요. 풀이 과정을 보여주세요.",
+            "turn2": "같은 조건에서 연속하는 네 짝수의 합이 140이면 네 수는?",
+        },
+        {
+            "turn1": "반지름이 5cm인 원의 넓이를 구하세요.",
+            "turn2": "이 원에 내접하는 정사각형의 넓이는 얼마인가요?",
+        },
+        {
+            "turn1": "2x + 3y = 12, x - y = 1 연립방정식을 풀어주세요.",
+            "turn2": "여기에 z에 대한 식 x + y + z = 10을 추가하면 z의 값은?",
+        },
+        {
+            "turn1": "1부터 100까지의 자연수 합을 구하세요. 가우스 공식을 사용하여 설명해주세요.",
+            "turn2": "1부터 100까지 중 3의 배수만의 합은 얼마인가요?",
+        },
+        {
+            "turn1": "어떤 수의 30%가 45일 때, 그 수를 구하세요.",
+            "turn2": "그 수의 150%에서 원래 수를 뺀 값은 얼마인가요?",
+        },
+        {
+            "turn1": "직각삼각형의 두 변이 3과 4일 때, 빗변의 길이를 구하세요.",
+            "turn2": "이 직각삼각형의 넓이와 내접원의 반지름을 구하세요.",
+        },
+        {
+            "turn1": "등차수열 2, 5, 8, 11, ... 의 제20항을 구하세요.",
+            "turn2": "이 수열의 첫째 항부터 제20항까지의 합을 구하세요.",
+        },
+        {
+            "turn1": "x^2 - 5x + 6 = 0 을 인수분해하여 풀어주세요.",
+            "turn2": "두 근의 역수의 합을 구하세요.",
+        },
+        {
+            "turn1": "8명 중 3명을 뽑는 조합의 수를 구하세요.",
+            "turn2": "8명 중 반장, 부반장, 서기를 뽑는 순열의 수와 비교하여 설명하세요.",
+        },
+        {
+            "turn1": "시속 60km로 달리는 차와 시속 80km로 달리는 차가 같은 지점에서 동시에 출발합니다. 2시간 후 두 차의 거리 차이는?",
+            "turn2": "두 차가 반대 방향으로 출발했다면, 1시간 30분 후 두 차 사이의 거리는?",
+        },
+    ],
+
+    # ── Coding (코딩) ──────────────────────────────────────────────────────
+    "coding": [
+        {
+            "turn1": "Python으로 피보나치 수열의 n번째 항을 재귀적으로 구하는 함수를 작성하세요.",
+            "turn2": "위 함수를 메모이제이션을 적용하여 최적화하세요. 시간 복잡도 비교도 해주세요.",
+        },
+        {
+            "turn1": "Python으로 문자열이 팰린드롬인지 확인하는 함수를 작성하세요.",
+            "turn2": "한국어 문장에서 공백과 특수문자를 무시하고 팰린드롬을 판별하도록 수정하세요.",
+        },
+        {
+            "turn1": "Python으로 버블 정렬을 구현하세요.",
+            "turn2": "위 코드의 시간 복잡도를 분석하고, 최선의 경우를 O(n)으로 최적화하세요.",
+        },
+        {
+            "turn1": "Python으로 두 개의 정렬된 리스트를 하나의 정렬된 리스트로 병합하는 함수를 작성하세요.",
+            "turn2": "이를 k개의 정렬된 리스트로 일반화하세요. 힙을 사용해주세요.",
+        },
+        {
+            "turn1": "Python으로 간단한 스택 자료구조를 클래스로 구현하세요. push, pop, peek, is_empty 메서드를 포함하세요.",
+            "turn2": "이 스택을 사용하여 괄호 짝 검증 함수를 작성하세요. (), [], {} 모두 지원해야 합니다.",
+        },
+        {
+            "turn1": "Python으로 이진 탐색 알고리즘을 구현하세요.",
+            "turn2": "정렬된 배열에서 특정 값이 처음 등장하는 인덱스를 찾도록 수정하세요. (중복 허용)",
+        },
+        {
+            "turn1": "Python으로 단어 빈도를 세어 가장 많이 등장한 단어 상위 5개를 출력하는 코드를 작성하세요.",
+            "turn2": "한국어 텍스트에도 동작하도록 수정하고, 조사(은/는/이/가 등)를 제거하는 전처리를 추가하세요.",
+        },
+        {
+            "turn1": "Python으로 간단한 계산기를 만드세요. +, -, *, / 를 지원해야 합니다.",
+            "turn2": "괄호 처리와 연산자 우선순위를 지원하도록 확장하세요.",
+        },
+        {
+            "turn1": "Python으로 주어진 리스트에서 중복을 제거하되, 원래 순서를 유지하는 함수를 작성하세요.",
+            "turn2": "이 함수를 리스트의 리스트(2차원)에서도 동작하도록 확장하세요. (내부 리스트가 동일하면 중복)",
+        },
+        {
+            "turn1": "Python으로 간단한 연결 리스트(Linked List)를 구현하세요. 삽입, 삭제, 출력 기능을 포함하세요.",
+            "turn2": "연결 리스트에서 사이클이 존재하는지 판별하는 함수를 추가하세요. (Floyd의 토끼와 거북이 알고리즘)",
+        },
+    ],
+
+    # ── Extraction (추출) ──────────────────────────────────────────────────
+    "extraction": [
+        {
+            "turn1": "다음 텍스트에서 인물 이름, 장소, 날짜를 추출하세요:\n'2024년 3월 15일, 김민수는 서울 강남역 카페에서 이영희와 프로젝트 회의를 진행했다. 다음 미팅은 부산 해운대에서 4월 2일로 예정되었다.'",
+            "turn2": "추출한 정보를 활용하여 캘린더 이벤트 형식(JSON)으로 변환해주세요.",
+        },
+        {
+            "turn1": "다음 제품 리뷰에서 장점과 단점을 분류하세요:\n'이 노트북은 화면이 밝고 선명하며 배터리가 오래 갑니다. 하지만 팬 소음이 크고 키보드 타건감이 아쉽습니다. 가격 대비 성능은 훌륭하지만 무게가 좀 있어서 휴대하기 불편합니다.'",
+            "turn2": "장점과 단점을 각각 중요도 순으로 정렬하고, 5점 만점 총점을 매겨주세요.",
+        },
+        {
+            "turn1": "다음 뉴스 기사에서 핵심 내용을 5W1H(누가, 언제, 어디서, 무엇을, 왜, 어떻게) 형식으로 정리하세요:\n'국토교통부는 2024년 1월부터 전국 공공임대주택 5만 가구를 추가 공급한다고 발표했다. 이는 청년과 신혼부부의 주거 안정을 위한 것으로, 입주 조건을 완화하고 임대료를 시세의 30% 수준으로 책정할 예정이다.'",
+            "turn2": "위 정보를 바탕으로 이 정책의 대상자에게 보낼 안내 메시지를 작성해주세요.",
+        },
+        {
+            "turn1": "다음 이메일에서 요청 사항, 마감일, 담당자를 추출하세요:\n'안녕하세요 박과장님, 다음 주 금요일까지 2분기 실적 보고서를 완성해주시기 바랍니다. 김대리에게 데이터 취합을, 이사원에게 차트 제작을 맡겨주세요. 최종 검토는 화요일까지 저에게 보내주시면 됩니다.'",
+            "turn2": "추출한 정보를 프로젝트 관리 도구의 태스크 목록(마크다운 체크리스트)으로 변환해주세요.",
+        },
+        {
+            "turn1": "다음 요리 레시피에서 재료 목록과 각 재료의 양을 테이블 형식으로 추출하세요:\n'된장찌개: 된장 2큰술, 두부 반 모, 호박 1/3개, 양파 반 개, 청양고추 1개, 대파 1대, 다진 마늘 1작은술, 멸치 육수 2컵을 준비합니다.'",
+            "turn2": "위 레시피를 4인분으로 조정하고(원래 2인분 기준), 영양 정보 추정치도 추가해주세요.",
+        },
+        {
+            "turn1": "다음 대화에서 합의된 사항과 미결 사항을 구분하여 정리하세요:\n'A: 프로젝트 시작일은 3월로 하죠. B: 좋습니다. 예산은 5천만원으로요. A: 예산은 재검토가 필요합니다. B: 팀원은 5명으로 확정할까요? A: 네, 5명으로 합시다. 회의 장소는 아직 정하지 못했네요.'",
+            "turn2": "정리한 내용을 바탕으로 공식 회의록 형식으로 작성해주세요.",
+        },
+        {
+            "turn1": "다음 텍스트에서 모든 숫자 데이터와 그 단위를 추출하세요:\n'2023년 한국 GDP는 약 1조 7,000억 달러로 세계 13위입니다. 인구는 약 5,180만 명이며, 1인당 GDP는 약 33,000달러입니다. 경제 성장률은 1.4%를 기록했습니다.'",
+            "turn2": "추출한 데이터를 시각화하기 위한 차트 종류를 추천하고, 각 데이터에 맞는 차트 설정을 JSON으로 제시하세요.",
+        },
+        {
+            "turn1": "다음 구인 공고에서 필수 자격 요건과 우대 사항을 구분하세요:\n'채용 조건: 컴퓨터공학 관련 학과 졸업, Python 능숙, 경력 3년 이상 필수. 우대: AWS 자격증 보유자, 데이터 분석 경험자, 영어 비즈니스 회화 가능자. 석사 학위 소지자 우대.'",
+            "turn2": "각 요건별로 자기소개서에서 어필할 포인트를 정리해주세요.",
+        },
+        {
+            "turn1": "다음 문장에서 감정(긍정/부정/중립)을 분석하고 근거를 제시하세요:\n'이번 여행은 정말 기대 이상이었어요! 숙소는 깨끗했지만 위치가 좀 아쉬웠고, 음식은 최고였습니다. 다만 날씨가 안 좋아서 일정 일부를 취소한 건 아쉽네요.'",
+            "turn2": "문장별로 감정 점수(-5~+5)를 매기고, 전체 감정 추이 그래프를 텍스트로 표현해주세요.",
+        },
+        {
+            "turn1": "다음 약관에서 소비자에게 불리할 수 있는 조항을 찾아 설명하세요:\n'① 회사는 서비스를 사전 통보 없이 변경할 수 있습니다. ② 환불은 구매 후 7일 이내만 가능하며 수수료 20%가 부과됩니다. ③ 분쟁 발생 시 회사 소재지 관할 법원에서 해결합니다. ④ 개인정보는 마케팅 목적으로 제3자에게 제공될 수 있습니다.'",
+            "turn2": "각 불리한 조항에 대해 소비자 보호법 관점에서 개선안을 제시하세요.",
+        },
+    ],
+
+    # ── STEM (과학) ──────────────────────────────────────────────────────
+    "stem": [
+        {
+            "turn1": "광합성의 과정을 명반응과 암반응으로 나누어 설명하세요.",
+            "turn2": "기후변화로 CO₂ 농도가 2배 증가하면 광합성 속도에 어떤 영향이 있나요?",
+        },
+        {
+            "turn1": "뉴턴의 운동 법칙 세 가지를 실생활 예시와 함께 설명하세요.",
+            "turn2": "우주 정거장(무중력 상태)에서 이 법칙들은 어떻게 적용되나요?",
+        },
+        {
+            "turn1": "DNA 복제 과정을 단계별로 설명하세요.",
+            "turn2": "복제 과정에서 오류가 발생하면 어떤 교정 메커니즘이 작동하나요?",
+        },
+        {
+            "turn1": "반도체의 P형과 N형의 차이를 설명하세요.",
+            "turn2": "P-N 접합 다이오드의 순방향·역방향 동작 원리를 설명하세요.",
+        },
+        {
+            "turn1": "물의 상태 변화(고체→액체→기체)를 분자 운동의 관점에서 설명하세요.",
+            "turn2": "압력이 매우 낮은 환경에서 물의 상태 변화는 어떻게 달라지나요? (삼중점 개념 포함)",
+        },
+        {
+            "turn1": "지구 온난화의 온실효과 메커니즘을 설명하세요.",
+            "turn2": "금성은 온실효과가 극단적으로 진행된 행성입니다. 지구와 비교하여 차이점을 설명하세요.",
+        },
+        {
+            "turn1": "항생제 내성이 발생하는 진화적 메커니즘을 설명하세요.",
+            "turn2": "항생제 내성 문제를 해결하기 위해 연구되고 있는 대안적 접근법 세 가지를 소개하세요.",
+        },
+        {
+            "turn1": "블랙홀이란 무엇이며, 어떻게 형성되는지 설명하세요.",
+            "turn2": "호킹 복사란 무엇이며, 블랙홀이 완전히 증발할 수 있나요?",
+        },
+        {
+            "turn1": "인체의 면역 체계에서 선천면역과 적응면역의 차이를 설명하세요.",
+            "turn2": "mRNA 백신이 적응면역을 어떻게 활성화하는지 단계별로 설명하세요.",
+        },
+        {
+            "turn1": "엔트로피의 개념을 열역학 제2법칙과 연결하여 설명하세요.",
+            "turn2": "생명체가 엔트로피 증가 법칙에 반하는 것처럼 보이는 이유를 설명하세요.",
+        },
+    ],
+
+    # ── Humanities (인문) ──────────────────────────────────────────────────
+    "humanities": [
+        {
+            "turn1": "한국 민주화 운동의 핵심 사건들을 시간순으로 정리하고, 각 사건의 역사적 의의를 설명하세요.",
+            "turn2": "한국의 민주화 과정을 다른 아시아 국가(예: 대만, 필리핀)와 비교하세요.",
+        },
+        {
+            "turn1": "공리주의와 의무론적 윤리학의 핵심 차이를 설명하세요.",
+            "turn2": "트롤리 문제에 두 윤리 이론을 각각 적용하면 어떤 결론이 나오나요?",
+        },
+        {
+            "turn1": "한글의 창제 원리와 과학적 우수성을 설명하세요.",
+            "turn2": "디지털 시대에 한글이 가진 장점과 직면한 과제를 논의하세요.",
+        },
+        {
+            "turn1": "동양 철학(유교, 불교, 도교)에서 '자아'에 대한 관점을 비교하세요.",
+            "turn2": "이러한 동양적 자아관이 현대 심리학의 '자기(self)' 개념과 어떻게 대화할 수 있을까요?",
+        },
+        {
+            "turn1": "조선시대 신분 제도의 구조와 특징을 설명하세요.",
+            "turn2": "조선 후기 신분 제도의 동요와 변화 양상을 경제적·사회적 원인과 함께 분석하세요.",
+        },
+        {
+            "turn1": "르네상스가 유럽 사회에 미친 영향을 문화, 과학, 정치 측면에서 설명하세요.",
+            "turn2": "한국 역사에서 르네상스에 비견할 만한 문화적 전환기가 있다면 언제이며, 왜 그렇게 보나요?",
+        },
+        {
+            "turn1": "페미니즘의 주요 물결(1차, 2차, 3차)을 시대적 배경과 함께 설명하세요.",
+            "turn2": "한국 사회에서 페미니즘 담론이 어떤 고유한 특징을 가지는지 분석하세요.",
+        },
+        {
+            "turn1": "소크라테스의 '너 자신을 알라'의 철학적 의미를 설명하세요.",
+            "turn2": "이 명제를 AI 시대에 재해석한다면 어떤 의미를 가질 수 있을까요?",
+        },
+        {
+            "turn1": "한국 전통 음악(국악)의 주요 장르와 특징을 설명하세요.",
+            "turn2": "국악과 K-pop의 융합 사례를 분석하고, 전통 음악의 현대적 계승 방안을 제시하세요.",
+        },
+        {
+            "turn1": "식민지 시대 문학의 특징을 한국과 인도의 사례를 들어 비교하세요.",
+            "turn2": "포스트콜로니얼 관점에서 두 나라 문학의 공통점과 차이점을 심층 분석하세요.",
+        },
+    ],
+}
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 실행
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TRACK_NAME = "track2_ko_bench"
+
+
+def run(models: Optional[list[str]] = None) -> dict:
+    """
+    Ko-Bench 스타일 멀티턴 평가 실행
+
+    Args:
+        models: 평가할 모델 목록. None이면 config.ALL_MODELS 사용.
+
+    Returns:
+        {
+            "track": "track2_ko_bench",
+            "results": [...],
+            "summary": {model: {category: {turn1_mean, turn2_mean, overall_mean}}}
+        }
+    """
+    if models is None:
+        models = list(config.ALL_MODELS)
+
+    # 체크포인트 복원 시도
+    checkpoint = runner.load_checkpoint(TRACK_NAME)
+    all_results: list[dict] = checkpoint.get("results", []) if checkpoint else []
+    completed: set[str] = set()
+    if checkpoint:
+        for r in all_results:
+            completed.add(f"{r['model']}|{r['category']}|{r['question_idx']}")
+        print(f"  [체크포인트 복원] 기존 결과 {len(all_results)}건 로드")
+
+    current_model: Optional[str] = None
+
+    for model in models:
+        print(f"\n{'='*60}")
+        print(f"  모델: {model}")
+        print(f"{'='*60}")
+
+        # 모델 전환
+        if not runner.switch_model(model, current_model):
+            print(f"  [오류] 모델 로딩 실패: {model}")
+            continue
+        current_model = model
+
+        for category in config.TRACK2_CATEGORIES:
+            questions = QUESTIONS[category]
+            criteria = CATEGORY_CRITERIA[category]
+
+            for q_idx, q in enumerate(questions):
+                key = f"{model}|{category}|{q_idx}"
+                if key in completed:
+                    continue
+
+                print(f"    [{category}] Q{q_idx+1}/{len(questions)}", end=" ", flush=True)
+
+                # ── Turn 1 ───────────────────────────────────────────
+                turn1_messages = [{"role": "user", "content": q["turn1"]}]
+                turn1_result = runner.chat(model, turn1_messages)
+
+                if turn1_result["error"]:
+                    print(f"T1 오류: {turn1_result['error']}")
+                    result_entry = _make_error_entry(
+                        model, category, q_idx, q, turn1_result["error"],
+                    )
+                    all_results.append(result_entry)
+                    completed.add(key)
+                    time.sleep(config.COOLDOWN_BETWEEN_TESTS)
+                    continue
+
+                turn1_answer = turn1_result["response"]
+
+                # Turn 1 채점
+                turn1_score = judge.score_with_criteria(
+                    prompt=q["turn1"],
+                    response=turn1_answer,
+                    criteria=criteria,
+                )
+
+                # ── Turn 2 ───────────────────────────────────────────
+                turn2_messages = [
+                    {"role": "user", "content": q["turn1"]},
+                    {"role": "assistant", "content": turn1_answer},
+                    {"role": "user", "content": q["turn2"]},
+                ]
+                turn2_result = runner.chat(model, turn2_messages)
+
+                if turn2_result["error"]:
+                    print(f"T2 오류: {turn2_result['error']}")
+                    result_entry = _make_partial_entry(
+                        model, category, q_idx, q,
+                        turn1_answer, turn1_result, turn1_score,
+                        turn2_result["error"],
+                    )
+                    all_results.append(result_entry)
+                    completed.add(key)
+                    time.sleep(config.COOLDOWN_BETWEEN_TESTS)
+                    continue
+
+                turn2_answer = turn2_result["response"]
+
+                # Turn 2 채점
+                turn2_prompt = f"[Turn 1 질문]\n{q['turn1']}\n\n[Turn 1 답변]\n{turn1_answer}\n\n[Turn 2 질문]\n{q['turn2']}"
+                turn2_score = judge.score_with_criteria(
+                    prompt=turn2_prompt,
+                    response=turn2_answer,
+                    criteria=criteria,
+                )
+
+                # 결과 저장
+                t1_mean = _scores_mean(turn1_score)
+                t2_mean = _scores_mean(turn2_score)
+                print(f"T1={t1_mean:.1f} T2={t2_mean:.1f}")
+
+                result_entry = {
+                    "model": model,
+                    "category": category,
+                    "question_idx": q_idx,
+                    "turn1_question": q["turn1"],
+                    "turn2_question": q["turn2"],
+                    "turn1_answer": turn1_answer,
+                    "turn2_answer": turn2_answer,
+                    "turn1_scores": turn1_score,
+                    "turn2_scores": turn2_score,
+                    "turn1_mean": t1_mean,
+                    "turn2_mean": t2_mean,
+                    "turn1_perf": _perf_summary(turn1_result),
+                    "turn2_perf": _perf_summary(turn2_result),
+                    "error": None,
+                }
+                all_results.append(result_entry)
+                completed.add(key)
+
+                time.sleep(config.COOLDOWN_BETWEEN_TESTS)
+
+        # 모델 단위 체크포인트 저장
+        runner.save_checkpoint(
+            {"results": all_results, "timestamp": datetime.now().isoformat()},
+            TRACK_NAME,
+        )
+        print(f"  [체크포인트 저장] 총 {len(all_results)}건")
+
+    # ── 요약 생성 ────────────────────────────────────────────────────────
+    summary = _build_summary(all_results)
+
+    final_output = {
+        "track": TRACK_NAME,
+        "results": all_results,
+        "summary": summary,
+    }
+
+    # 최종 결과 저장
+    path = runner.save_results_incremental(final_output, TRACK_NAME)
+    print(f"\n  [완료] 결과 저장: {path}")
+
+    return final_output
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 헬퍼 함수
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+def _scores_mean(score_result: dict) -> float:
+    """score_with_criteria 결과에서 평균 점수 계산"""
+    scores = score_result.get("scores", {})
+    if not scores:
+        return 0.0
+    return sum(scores.values()) / len(scores)
+
+
+def _perf_summary(result: dict) -> dict:
+    """러너 결과에서 성능 지표만 추출"""
+    return {
+        "tokens_per_sec": result.get("tokens_per_sec", 0),
+        "eval_count": result.get("eval_count", 0),
+        "wall_time_s": result.get("wall_time_s", 0),
+    }
+
+
+def _make_error_entry(
+    model: str, category: str, q_idx: int, q: dict, error: str,
+) -> dict:
+    """Turn 1 오류 시 결과 엔트리 생성"""
+    return {
+        "model": model,
+        "category": category,
+        "question_idx": q_idx,
+        "turn1_question": q["turn1"],
+        "turn2_question": q["turn2"],
+        "turn1_answer": "",
+        "turn2_answer": "",
+        "turn1_scores": {"scores": {}, "reasoning": "", "error": error},
+        "turn2_scores": {"scores": {}, "reasoning": "", "error": "turn1 실패로 스킵"},
+        "turn1_mean": 0.0,
+        "turn2_mean": 0.0,
+        "turn1_perf": {},
+        "turn2_perf": {},
+        "error": error,
+    }
+
+
+def _make_partial_entry(
+    model: str, category: str, q_idx: int, q: dict,
+    turn1_answer: str, turn1_result: dict, turn1_score: dict,
+    turn2_error: str,
+) -> dict:
+    """Turn 2 오류 시 결과 엔트리 생성 (Turn 1은 정상)"""
+    return {
+        "model": model,
+        "category": category,
+        "question_idx": q_idx,
+        "turn1_question": q["turn1"],
+        "turn2_question": q["turn2"],
+        "turn1_answer": turn1_answer,
+        "turn2_answer": "",
+        "turn1_scores": turn1_score,
+        "turn2_scores": {"scores": {}, "reasoning": "", "error": turn2_error},
+        "turn1_mean": _scores_mean(turn1_score),
+        "turn2_mean": 0.0,
+        "turn1_perf": _perf_summary(turn1_result),
+        "turn2_perf": {},
+        "error": f"turn2: {turn2_error}",
+    }
+
+
+def _build_summary(results: list[dict]) -> dict:
+    """
+    모델 x 카테고리별 요약 통계 생성
+
+    Returns:
+        {model: {category: {"turn1_mean": float, "turn2_mean": float, "overall_mean": float}}}
+    """
+    from collections import defaultdict
+
+    # {model: {category: {"t1": [scores], "t2": [scores]}}}
+    buckets: dict = defaultdict(lambda: defaultdict(lambda: {"t1": [], "t2": []}))
+
+    for r in results:
+        model = r["model"]
+        cat = r["category"]
+        if r.get("turn1_mean", 0) > 0:
+            buckets[model][cat]["t1"].append(r["turn1_mean"])
+        if r.get("turn2_mean", 0) > 0:
+            buckets[model][cat]["t2"].append(r["turn2_mean"])
+
+    summary: dict = {}
+    for model, cats in buckets.items():
+        summary[model] = {}
+        for cat, data in cats.items():
+            t1_scores = data["t1"]
+            t2_scores = data["t2"]
+            t1_mean = sum(t1_scores) / len(t1_scores) if t1_scores else 0.0
+            t2_mean = sum(t2_scores) / len(t2_scores) if t2_scores else 0.0
+            all_scores = t1_scores + t2_scores
+            overall_mean = sum(all_scores) / len(all_scores) if all_scores else 0.0
+            summary[model][cat] = {
+                "turn1_mean": round(t1_mean, 2),
+                "turn2_mean": round(t2_mean, 2),
+                "overall_mean": round(overall_mean, 2),
+            }
+
+    return summary
