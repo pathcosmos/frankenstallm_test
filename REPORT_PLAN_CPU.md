@@ -43,10 +43,45 @@
 - 권고사항
 
 ### 3.2 평가 환경
-- 하드웨어: CPU(AMD), GPU(RTX 5060 Ti 16GB), RAM
-- 소프트웨어: Ubuntu, Ollama, Python 3.12
-- 평가 모드: CPU-only (Stage 1, 2), GPU (Track 6 일부)
-- 샘플링 파라미터: temperature=0.7, repeat_penalty=1.2, top_p=0.9
+
+#### 하드웨어 상세 스펙
+| 항목 | 스펙 |
+|------|------|
+| **CPU** | Intel CC150 @ 3.50GHz (8코어 / 16스레드, Coffee Lake) |
+| **메인보드** | ASRock Z390 Extreme4 |
+| **RAM** | 64GB (MemTotal: 65,760 MB) |
+| **Swap** | 16GB |
+| **GPU** | NVIDIA RTX 5060 Ti 16GB VRAM (장착되어 있으나 평가 시 **의도적으로 미사용**) |
+| **저장장치** | NVMe 476GB (OS, /dev/nvme0n1) + NVMe 954GB (INTEL) + SSD 1.9TB×2 (SPCC, Lexar) + SSD 1.8TB (TEAM) |
+| **OS** | Ubuntu 24.04.3 LTS (Noble Numbat), Kernel 6.8.0-101-generic |
+| **CPU 아키텍처** | x86_64, L3 캐시 16MB |
+
+#### 소프트웨어
+| 항목 | 버전 |
+|------|------|
+| Python | 3.12.3 |
+| Ollama | llama.cpp 기반 추론 엔진 |
+| Judge LLM | Claude (via `claude -p` CLI) |
+
+#### CPU-only 테스트 결정 사유
+- **GPU(RTX 5060 Ti 16GB)가 장착되어 있으나, 의도적으로 CPU-only 모드로 평가 수행**
+- `CUDA_VISIBLE_DEVICES=""` 환경변수로 GPU 비활성화
+- Track 6 성능 프로파일링의 v2-Q4_K_M만 GPU 모드로 참고 측정
+- CPU 모드로 인해 타임아웃 2배 자동 적용 (`config.py _TIMEOUT_MULTIPLIER=2`)
+- **참고**: 정확도(Track 1,4) 결과는 GPU/CPU 무관하게 동일 (greedy decoding). 생성 품질(Track 2,3,5,7)은 동일 샘플링 파라미터로 이론상 동일한 결과 분포.
+
+#### 샘플링 파라미터
+- 일반: temperature=0.7, repeat_penalty=1.2, top_p=0.9, num_predict=512
+- 벤치마크: temperature=0.0, repeat_penalty=1.0, top_p=1.0, num_predict=256
+
+#### 총 테스트 소요 시간
+| Stage | 트랙 | 시작 | 종료 | 소요 |
+|:---:|------|------|------|-----:|
+| 0 | Track 6 (Performance) | 03/10 13:40 | 03/10 15:52 | 2.2h |
+| 1 | Track 1, 4, 5 | 03/11 00:31 | 03/11 13:48 | 13.3h |
+| 2 | Track 2, 3, 7 | 03/11 14:15 | 03/12 완료예정 | ~24h |
+| **합계** | | | | **~40h** |
+- GPU 모드 사용 시 Stage 1, 2 소요시간이 대폭 단축될 것으로 예상
 
 ### 3.3 모델 프로필
 - 8개 모델 스펙 비교 테이블 (파라미터 수, 양자화, 아키텍처, vocab 크기)
