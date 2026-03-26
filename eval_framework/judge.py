@@ -1,56 +1,38 @@
 """
-LLM-as-Judge — Claude Code CLI (`claude -p`)를 사용한 응답 채점
+LLM-as-Judge — Ollama API를 통한 gemma3:12b 기반 응답 채점
 
-ANTHROPIC_API_KEY 없이 Claude Code의 인증을 그대로 활용.
 Track 2 (Ko-Bench), Track 3 (한국어 심화), Track 7 (쌍대비교) 에서 사용
 """
 
 import json
 import re
-import subprocess
-import shutil
 import time
-from typing import Optional
+
+import requests
 
 from . import config
 
-# claude CLI 경로 캐시
-_CLAUDE_PATH: Optional[str] = None
 
-
-def _get_claude_path() -> str:
-    """claude CLI 경로 탐색"""
-    global _CLAUDE_PATH
-    if _CLAUDE_PATH is None:
-        _CLAUDE_PATH = shutil.which("claude")
-        if _CLAUDE_PATH is None:
-            raise RuntimeError(
-                "claude CLI를 찾을 수 없습니다. "
-                "Claude Code가 설치되어 있는지 확인하세요."
-            )
-    return _CLAUDE_PATH
-
-
-def _call_claude(prompt: str, max_tokens: int = 500, timeout: int = 120) -> str:
+def _call_judge(prompt: str, timeout: int | None = None) -> str:
     """
-    claude -p 로 비대화형 호출.
-    stdin으로 프롬프트를 전달하고 stdout으로 응답을 받음.
-    CLAUDECODE 환경변수를 제거하여 중첩 세션 방지를 우회.
+    Ollama /api/generate로 judge 모델 호출.
+    stream=false로 전체 응답을 한 번에 수신.
     """
-    claude = _get_claude_path()
-    env = {k: v for k, v in __import__("os").environ.items() if k != "CLAUDECODE"}
-    result = subprocess.run(
-        [claude, "-p", "--output-format", "text"],
-        input=prompt,
-        capture_output=True,
-        text=True,
+    if timeout is None:
+        timeout = config.JUDGE_TIMEOUT
+
+    resp = requests.post(
+        config.OLLAMA_API_GENERATE,
+        json={
+            "model": config.JUDGE_MODEL,
+            "prompt": prompt,
+            "stream": False,
+            "options": config.JUDGE_SAMPLING,
+        },
         timeout=timeout,
-        env=env,
     )
-    if result.returncode != 0:
-        stderr = result.stderr.strip()
-        raise RuntimeError(f"claude CLI 오류 (rc={result.returncode}): {stderr}")
-    return result.stdout.strip()
+    resp.raise_for_status()
+    return resp.json()["response"].strip()
 
 
 def _extract_json(text: str) -> dict:
@@ -105,9 +87,10 @@ def score_response(
 반드시 아래 JSON 형식으로만 응답하세요:
 {{"score": <1-10>, "reasoning": "<평가 이유 1-2문장>"}}"""
 
+    text = ""
     for attempt in range(max_retries):
         try:
-            text = _call_claude(judge_prompt)
+            text = _call_judge(judge_prompt)
             result = _extract_json(text)
             return {
                 "score": int(result["score"]),
@@ -121,8 +104,8 @@ def score_response(
                 score = int(n)
                 if 1 <= score <= 10:
                     return {"score": score, "reasoning": text[:200], "error": None}
-        except subprocess.TimeoutExpired:
-            print(f"    ⏳ claude CLI 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
+        except requests.Timeout:
+            print(f"    ⏳ judge 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
         except Exception as e:
             if attempt == max_retries - 1:
                 return {"score": 0, "reasoning": "", "error": str(e)}
@@ -163,7 +146,7 @@ def score_pairwise(
 
     for attempt in range(max_retries):
         try:
-            text = _call_claude(judge_prompt)
+            text = _call_judge(judge_prompt)
             result = _extract_json(text)
             winner = result["winner"].upper()
             if winner not in ("A", "B", "TIE"):
@@ -173,8 +156,8 @@ def score_pairwise(
                 "reasoning": result.get("reasoning", ""),
                 "error": None,
             }
-        except subprocess.TimeoutExpired:
-            print(f"    ⏳ claude CLI 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
+        except requests.Timeout:
+            print(f"    ⏳ judge 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
         except Exception as e:
             if attempt == max_retries - 1:
                 return {"winner": "TIE", "reasoning": "", "error": str(e)}
@@ -219,7 +202,7 @@ def score_with_criteria(
 
     for attempt in range(max_retries):
         try:
-            text = _call_claude(judge_prompt)
+            text = _call_judge(judge_prompt)
             result = _extract_json(text)
             scores = {k: int(v) for k, v in result["scores"].items()}
             return {
@@ -227,8 +210,8 @@ def score_with_criteria(
                 "reasoning": result.get("reasoning", ""),
                 "error": None,
             }
-        except subprocess.TimeoutExpired:
-            print(f"    ⏳ claude CLI 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
+        except requests.Timeout:
+            print(f"    ⏳ judge 타임아웃 — 재시도 {attempt + 1}/{max_retries}")
         except Exception as e:
             if attempt == max_retries - 1:
                 return {"scores": {}, "reasoning": "", "error": str(e)}

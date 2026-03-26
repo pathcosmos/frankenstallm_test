@@ -291,6 +291,54 @@ rm -rf ~/.cache/matplotlib
 
 ---
 
+## 테스트 (pytest)
+
+### 테스트 설치 및 실행
+
+```bash
+# 1. 개발 의존성 설치
+pip install -r requirements-dev.txt
+
+# 2. 전체 테스트 실행
+pytest tests/ -v
+
+# 3. 단위 테스트만
+pytest tests/unit/ -v
+
+# 4. 통합 테스트만
+pytest tests/integration/ -v
+
+# 5. 커버리지 리포트
+pytest tests/ --cov=eval_framework --cov-report=term-missing
+```
+
+### 테스트 구조
+
+**116개 테스트** — 모두 Ollama 서버나 GPU 없이 실행 가능 (mock 기반)
+
+| 파일 | 테스트 수 | 대상 모듈 |
+|------|----------|----------|
+| `tests/unit/test_judge.py` | 31 | `_call_judge`, `_extract_json`, `score_response`, `score_pairwise`, `score_with_criteria` |
+| `tests/unit/test_runner.py` | 31 | `generate`, `chat`, `switch_model`, `wait_for_ollama`, health check, checkpoint I/O |
+| `tests/unit/test_scoring.py` | 17 | `aggregate_accuracy`, `aggregate_judge_scores`, `fit_bradley_terry`, `build_scorecard` |
+| `tests/unit/test_config.py` | 11 | `_gpu_available`, 타임아웃 계산, 모델 리스트 일관성 |
+| `tests/unit/test_evafrill_runner.py` | 9 | `is_evafrill`, `_top_p_filtering` (torch CPU) |
+| `tests/unit/test_data_externalization.py` | 9 | Track 2/7 JSON 로딩, 스키마 검증, fallback |
+| `tests/integration/test_judge_pipeline.py` | 3 | score → aggregate → Elo 파이프라인 |
+| `tests/integration/test_model_lifecycle.py` | 3 | 모델 전환 A→B→C, 서버 재시작, evafrill↔ollama |
+| `tests/integration/test_track_execution.py` | 2 | Track 7 최소 실행, 체크포인트 이어하기 |
+
+### 커버리지 현황
+
+| 모듈 | 커버리지 |
+|------|---------|
+| `judge.py` | 97% |
+| `scoring.py` | 98% |
+| `config.py` | 98% |
+| `runner.py` | 83% |
+
+---
+
 ## 프로젝트 구조
 
 ```
@@ -298,12 +346,15 @@ frankenstallm_test/
 ├── run_evaluation.py          # 메인 실행 스크립트
 ├── benchmark.py               # 단독 벤치마크
 ├── ollama_watchdog.sh         # Ollama 자동 재시작
-├── requirements.txt           # Python 의존성
+├── requirements.txt           # Python 의존성 (런타임)
+├── requirements-dev.txt       # Python 의존성 (개발/테스트)
+├── pytest.ini                 # pytest 설정
 ├── eval_framework/            # 평가 프레임워크 코어
 │   ├── config.py              # 설정 (모델, 타임아웃, 파라미터)
 │   ├── runner.py              # Ollama API 실행 엔진
-│   ├── judge.py               # LLM-as-Judge (Claude CLI)
-│   ├── scoring.py             # 스코어카드 계산
+│   ├── judge.py               # LLM-as-Judge (Ollama gemma3:12b)
+│   ├── evafrill_runner.py     # EVAFRILL-Mo-3B PyTorch 직접 추론
+│   ├── scoring.py             # 스코어카드 계산 + Bradley-Terry Elo
 │   ├── report.py              # HTML/Markdown 리포트 생성
 │   └── tracks/                # 7개 평가 트랙
 │       ├── track1_korean_bench.py
@@ -313,11 +364,26 @@ frankenstallm_test/
 │       ├── track5_consistency.py
 │       ├── track6_performance.py
 │       └── track7_pairwise.py
+├── tests/                     # pytest 테스트 스위트
+│   ├── conftest.py            # 공유 fixtures (Ollama mock, 샘플 데이터)
+│   ├── unit/                  # 단위 테스트 (6 파일, 108개)
+│   │   ├── test_judge.py
+│   │   ├── test_runner.py
+│   │   ├── test_scoring.py
+│   │   ├── test_config.py
+│   │   ├── test_evafrill_runner.py
+│   │   └── test_data_externalization.py
+│   └── integration/           # 통합 테스트 (3 파일, 8개)
+│       ├── test_judge_pipeline.py
+│       ├── test_model_lifecycle.py
+│       └── test_track_execution.py
 ├── data/                      # 벤치마크 데이터셋
 │   ├── code_problems/
 │   ├── ko_bench/
+│   │   └── questions.json     # Track 2 질문 (80개, 외부화)
 │   ├── korean_deep/
-│   └── math_problems/
+│   ├── math_problems/
+│   └── track7_prompts.json    # Track 7 프롬프트 (20개, 외부화)
 ├── results/                   # 평가 결과 (체크포인트 포함)
 ├── reports/                   # 생성된 리포트
 ├── modelfiles/                # FRANKENSTALLM Modelfile 템플릿

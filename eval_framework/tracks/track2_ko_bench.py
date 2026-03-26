@@ -8,13 +8,24 @@ Track 2: Ko-Bench 스타일 멀티턴 평가
 Reference: MT-Bench, Ko-Bench (davidkim205/ko-bench)
 """
 
+import json
 import time
 from datetime import datetime
+from pathlib import Path
 from typing import Optional
 
 from eval_framework import config
 from eval_framework import runner
 from eval_framework import judge
+
+
+def _load_questions() -> dict[str, list[dict[str, str]]] | None:
+    """data/ko_bench/questions.json에서 질문 로드 (없으면 None → inline fallback)"""
+    path = config.DATA_DIR / "ko_bench" / "questions.json"
+    if path.exists():
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return None
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 # 카테고리별 채점 기준
@@ -461,8 +472,12 @@ def run(models: Optional[list[str]] = None) -> dict:
             continue
         current_model = model
 
+        # ── Phase 1: 응답 수집 (모델 호출만, Judge 없음) ─────────
+        _questions = _load_questions() or QUESTIONS
+        pending_judge: list[dict] = []
+
         for category in config.TRACK2_CATEGORIES:
-            questions = QUESTIONS[category]
+            questions = _questions[category]
             criteria = CATEGORY_CRITERIA[category]
 
             for q_idx, q in enumerate(questions):
@@ -488,13 +503,6 @@ def run(models: Optional[list[str]] = None) -> dict:
 
                 turn1_answer = turn1_result["response"]
 
-                # Turn 1 채점
-                turn1_score = judge.score_with_criteria(
-                    prompt=q["turn1"],
-                    response=turn1_answer,
-                    criteria=criteria,
-                )
-
                 # ── Turn 2 ───────────────────────────────────────────
                 turn2_messages = [
                     {"role": "user", "content": q["turn1"]},
@@ -503,53 +511,87 @@ def run(models: Optional[list[str]] = None) -> dict:
                 ]
                 turn2_result = runner.chat(model, turn2_messages)
 
-                if turn2_result["error"]:
-                    print(f"T2 오류: {turn2_result['error']}")
-                    result_entry = _make_partial_entry(
-                        model, category, q_idx, q,
-                        turn1_answer, turn1_result, turn1_score,
-                        turn2_result["error"],
-                    )
-                    all_results.append(result_entry)
-                    completed.add(key)
-                    time.sleep(config.COOLDOWN_BETWEEN_TESTS)
-                    continue
+                turn2_error = turn2_result["error"]
+                turn2_answer = turn2_result["response"] if not turn2_error else ""
 
-                turn2_answer = turn2_result["response"]
-
-                # Turn 2 채점
-                turn2_prompt = f"[Turn 1 질문]\n{q['turn1']}\n\n[Turn 1 답변]\n{turn1_answer}\n\n[Turn 2 질문]\n{q['turn2']}"
-                turn2_score = judge.score_with_criteria(
-                    prompt=turn2_prompt,
-                    response=turn2_answer,
-                    criteria=criteria,
-                )
-
-                # 결과 저장
-                t1_mean = _scores_mean(turn1_score)
-                t2_mean = _scores_mean(turn2_score)
-                print(f"T1={t1_mean:.1f} T2={t2_mean:.1f}")
-
-                result_entry = {
-                    "model": model,
+                pending_judge.append({
+                    "key": key,
                     "category": category,
-                    "question_idx": q_idx,
-                    "turn1_question": q["turn1"],
-                    "turn2_question": q["turn2"],
+                    "q_idx": q_idx,
+                    "q": q,
+                    "criteria": criteria,
                     "turn1_answer": turn1_answer,
+                    "turn1_result": turn1_result,
                     "turn2_answer": turn2_answer,
-                    "turn1_scores": turn1_score,
-                    "turn2_scores": turn2_score,
-                    "turn1_mean": t1_mean,
-                    "turn2_mean": t2_mean,
-                    "turn1_perf": _perf_summary(turn1_result),
-                    "turn2_perf": _perf_summary(turn2_result),
-                    "error": None,
-                }
-                all_results.append(result_entry)
-                completed.add(key)
+                    "turn2_result": turn2_result,
+                    "turn2_error": turn2_error,
+                })
+
+                if turn2_error:
+                    print(f"T2 오류: {turn2_error}", flush=True)
+                else:
+                    print("응답 수집 완료", flush=True)
 
                 time.sleep(config.COOLDOWN_BETWEEN_TESTS)
+
+        # ── Phase 2: 모델 언로드 → Judge 일괄 채점 ────────────────
+        if pending_judge:
+            print(f"\n  [{model}] VRAM 확보: 모델 언로드 → Judge 채점 ({len(pending_judge)}건)")
+            runner.unload_all_models()
+
+            for pi, pj in enumerate(pending_judge):
+                print(f"    Judge [{pi+1}/{len(pending_judge)}]", end=" ", flush=True)
+
+                # Turn 1 채점
+                turn1_score = judge.score_with_criteria(
+                    prompt=pj["q"]["turn1"],
+                    response=pj["turn1_answer"],
+                    criteria=pj["criteria"],
+                )
+
+                if pj["turn2_error"]:
+                    result_entry = _make_partial_entry(
+                        model, pj["category"], pj["q_idx"], pj["q"],
+                        pj["turn1_answer"], pj["turn1_result"], turn1_score,
+                        pj["turn2_error"],
+                    )
+                    print(f"T1={_scores_mean(turn1_score):.1f} T2=ERR")
+                else:
+                    # Turn 2 채점
+                    turn2_prompt = (
+                        f"[Turn 1 질문]\n{pj['q']['turn1']}\n\n"
+                        f"[Turn 1 답변]\n{pj['turn1_answer']}\n\n"
+                        f"[Turn 2 질문]\n{pj['q']['turn2']}"
+                    )
+                    turn2_score = judge.score_with_criteria(
+                        prompt=turn2_prompt,
+                        response=pj["turn2_answer"],
+                        criteria=pj["criteria"],
+                    )
+
+                    t1_mean = _scores_mean(turn1_score)
+                    t2_mean = _scores_mean(turn2_score)
+                    print(f"T1={t1_mean:.1f} T2={t2_mean:.1f}")
+
+                    result_entry = {
+                        "model": model,
+                        "category": pj["category"],
+                        "question_idx": pj["q_idx"],
+                        "turn1_question": pj["q"]["turn1"],
+                        "turn2_question": pj["q"]["turn2"],
+                        "turn1_answer": pj["turn1_answer"],
+                        "turn2_answer": pj["turn2_answer"],
+                        "turn1_scores": turn1_score,
+                        "turn2_scores": turn2_score,
+                        "turn1_mean": t1_mean,
+                        "turn2_mean": t2_mean,
+                        "turn1_perf": _perf_summary(pj["turn1_result"]),
+                        "turn2_perf": _perf_summary(pj["turn2_result"]),
+                        "error": None,
+                    }
+
+                all_results.append(result_entry)
+                completed.add(pj["key"])
 
         # 모델 단위 체크포인트 저장
         runner.save_checkpoint(

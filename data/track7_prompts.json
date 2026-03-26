@@ -1,0 +1,102 @@
+[
+  {
+    "id": "kr_history_1",
+    "category": "korean_knowledge",
+    "prompt": "조선 시대 세종대왕의 한글 창제 과정과 그 역사적 의의를 설명해 주세요."
+  },
+  {
+    "id": "kr_culture_1",
+    "category": "korean_knowledge",
+    "prompt": "한국의 김장 문화가 유네스코 무형문화유산에 등재된 이유와 김장의 사회적 의미를 서술하세요."
+  },
+  {
+    "id": "kr_current_1",
+    "category": "korean_knowledge",
+    "prompt": "한국의 저출산·고령화 문제의 원인과 이에 대한 정부 정책의 효과를 분석해 주세요."
+  },
+  {
+    "id": "reasoning_logic_1",
+    "category": "reasoning",
+    "prompt": "A, B, C, D 네 사람이 있습니다. A는 항상 진실만 말하고, B는 항상 거짓만 말합니다. C는 A가 거짓말쟁이라고 말했고, D는 B가 진실을 말한다고 했습니다. C와 D는 각각 진실을 말하는 사람인가요, 거짓을 말하는 사람인가요? 논리적으로 풀어 주세요."
+  },
+  {
+    "id": "reasoning_math_1",
+    "category": "reasoning",
+    "prompt": "어떤 연못에 수련이 자라고 있습니다. 수련은 매일 면적이 2배로 늘어납니다. 48일째에 연못 전체를 덮었다면, 연못의 절반을 덮은 것은 며칠째인가요? 풀이 과정을 단계별로 설명하세요."
+  },
+  {
+    "id": "reasoning_causal_1",
+    "category": "reasoning",
+    "prompt": "도시에서 자전거 전용 도로를 확충하면 교통 체증이 줄어들까요, 늘어날까요? 인과 관계를 고려하여 다양한 시나리오를 분석하세요."
+  },
+  {
+    "id": "creative_poem_1",
+    "category": "creative_writing",
+    "prompt": "가을 단풍을 주제로 한국어 자유시를 한 편 써 주세요. 시각적 이미지와 감정을 풍부하게 담아 주세요."
+  },
+  {
+    "id": "creative_essay_1",
+    "category": "creative_writing",
+    "prompt": "'어린 시절의 골목길'이라는 주제로 서정적인 수필을 작성해 주세요. 감각적 묘사를 포함해 주세요."
+  },
+  {
+    "id": "creative_story_1",
+    "category": "creative_writing",
+    "prompt": "2050년 서울을 배경으로, AI와 인간이 공존하는 미래 사회에서 벌어지는 짧은 이야기를 써 주세요."
+  },
+  {
+    "id": "code_function_1",
+    "category": "code",
+    "prompt": "Python으로 주어진 문자열에서 가장 긴 팰린드롬 부분 문자열을 찾는 함수를 작성하세요. 시간 복잡도를 설명하고 테스트 케이스도 포함해 주세요."
+  },
+  {
+    "id": "code_algo_1",
+    "category": "code",
+    "prompt": "다익스트라(Dijkstra) 알고리즘의 동작 원리를 단계별로 설명하고, 우선순위 큐를 사용하는 이유와 시간 복잡도를 분석해 주세요."
+  },
+  {
+    "id": "explain_science_1",
+    "category": "explanation",
+    "prompt": "양자 얽힘(quantum entanglement)이란 무엇인지 비전공자도 이해할 수 있도록 비유를 들어 설명해 주세요."
+  },
+  {
+    "id": "explain_everyday_1",
+    "category": "explanation",
+    "prompt": "비행기가 하늘을 나는 원리를 중학생이 이해할 수 있는 수준으로 설명해 주세요."
+  },
+  {
+    "id": "explain_complex_1",
+    "category": "explanation",
+    "prompt": "블록체인 기술의 작동 원리와 합의 메커니즘(PoW, PoS)의 차이점을 설명해 주세요."
+  },
+  {
+    "id": "practical_advice_1",
+    "category": "practical",
+    "prompt": "한국에서 1인 가구가 월 200만원으로 생활하기 위한 구체적인 예산 계획을 세워 주세요."
+  },
+  {
+    "id": "practical_howto_1",
+    "category": "practical",
+    "prompt": "집에서 천연 발효 식초를 만드는 방법을 재료 준비부터 완성까지 단계별로 알려 주세요."
+  },
+  {
+    "id": "practical_compare_1",
+    "category": "practical",
+    "prompt": "Python과 JavaScript를 비교하여 각각 어떤 프로젝트에 더 적합한지 장단점과 함께 설명해 주세요."
+  },
+  {
+    "id": "korean_honorific_1",
+    "category": "korean_language",
+    "prompt": "한국어 경어법(존댓말) 체계를 설명하고, '합쇼체', '해요체', '해체'의 차이를 예문과 함께 보여 주세요. 각각 어떤 상황에서 사용하는지도 설명해 주세요."
+  },
+  {
+    "id": "korean_grammar_1",
+    "category": "korean_language",
+    "prompt": "한국어 조사 '-은/는'과 '-이/가'의 차이를 외국인 학습자에게 명확한 예문과 함께 설명해 주세요."
+  },
+  {
+    "id": "korean_idiom_1",
+    "category": "korean_language",
+    "prompt": "'소 잃고 외양간 고친다', '낮말은 새가 듣고 밤말은 쥐가 듣는다', '될성부른 나무는 떡잎부터 알아본다' — 이 세 가지 한국 속담의 의미와 유래를 설명하고, 각각의 현대적 활용 예시를 들어 주세요."
+  }
+]
