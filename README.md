@@ -457,6 +457,62 @@ rm -rf ~/.cache/matplotlib
 **`ModuleNotFoundError: No module named 'torch'`**
 - PyTorch 미설치. `pip install torch` (CPU) 또는 CUDA 버전 설치
 
+### EVAFRILL CUDA 실패 → Ollama 무한 재시작 문제 (2026-03-30 수정)
+
+**증상:**
+EVAFRILL-Mo 모델 로딩 시 `CUDA error: unknown error (cudaErrorUnknown)` 발생 후, 이후 모든 Ollama 모델이 로딩 불가. Ollama 재시작이 무한 반복되며 평가가 표류(drift)함.
+
+**근본 원인:**
+`cudaErrorUnknown`은 일반 OOM과 달리 **GPU 드라이버 레벨 오염**을 일으킨다. EVAFRILL은 PyTorch로 `cuda:0`에 직접 텐서를 올리는데(`evafrill_runner.py:load_model()`), 이 과정에서 CUDA 컨텍스트가 비복구 상태로 손상되면 **같은 GPU를 공유하는 Ollama(별도 프로세스)**도 CUDA를 사용할 수 없게 된다.
+
+**인과 체인:**
+
+```
+EVAFRILL model.to(cuda:0) 실패
+  → GPU 드라이버 오염 (cudaErrorUnknown)
+  → 정리 코드 없이 return False
+  → 트랙 전환 시 GPU 상태 확인 없음
+  → Ollama 재시작 시 config.GPU_AVAILABLE=True (import 시점 캐시)
+  → Ollama가 GPU 모드로 재시작 → GPU 초기화 실패
+  → 60초 대기 → 재시작 3회 → 전부 실패
+  → 외부 재시도 루프와 중첩 → 수시간 표류
+  → SSH 세션 타임아웃으로 끊김
+```
+
+**수정 내용 (3-레이어 방어):**
+
+| 레이어 | 파일 | 변경 |
+|--------|------|------|
+| 발생 지점 | `evafrill_runner.py` | `model.to(cuda:0)` 실패 시 `del model` + `gc.collect()` + `torch.cuda.synchronize()` + `empty_cache()` 정리. `gpu_is_healthy()`(nvidia-smi)로 드라이버 오염 여부 진단 로그 |
+| 복구 지점 | `runner.py` | `_restart_ollama()`가 재시작 전 `_gpu_healthy_now()`로 GPU 상태 **동적** 확인 (import 시점 캐시 `config.GPU_AVAILABLE` 대신). GPU 죽었으면 `nvidia-smi --gpu-reset` 시도, 실패 시 `CUDA_VISIBLE_DEVICES=""` CPU 모드 폴백. `switch_model()`에서 EVAFRILL 실패 시 `evafrill_runner.unload_model()`로 CUDA 정리 후, `_gpu_healthy_now()`가 이상 감지한 경우에만 GPU 리셋 시도 |
+| 전환 지점 | `run_evaluation.py` | 트랙 간 쿨다운에서 GPU 헬스체크 추가. 이상 감지 시 GPU 리셋 시도 후, **리셋 성공 여부와 무관하게** `_restart_ollama()` 호출 (GPU 오염 후에는 Ollama도 재시작 필요) |
+
+**수정 후 동작:**
+
+```
+EVAFRILL model.to(cuda:0) 실패
+  → del model + gc.collect() + CUDA cleanup
+  → nvidia-smi로 GPU 상태 확인
+  → GPU 오염 감지 → nvidia-smi --gpu-reset 시도
+  → 리셋 성공: Ollama GPU 모드로 정상 재시작
+  → 리셋 실패: Ollama CPU 모드로 폴백 (느리지만 평가 계속 진행)
+```
+
+**핵심 변경 함수:**
+
+| 함수 | 파일 | 역할 |
+|------|------|------|
+| `_cuda_cleanup()` | `evafrill_runner.py` | CUDA 실패 후 gc + synchronize + empty_cache + reset_peak_memory_stats (각 단계 try-except 래핑) |
+| `gpu_is_healthy()` | `evafrill_runner.py` | nvidia-smi 호출로 GPU 드라이버 상태 동적 확인 |
+| `_gpu_healthy_now()` | `runner.py` | Ollama 재시작 전 GPU 상태 동적 확인 |
+| `_try_gpu_reset()` | `runner.py` | `nvidia-smi --gpu-reset -i 0` 실행, 성공 여부 반환 |
+| `switch_model()` (수정) | `runner.py` | EVAFRILL 실패 시 `unload_model()` + 조건부 GPU 리셋 추가 |
+
+**관련 기술 배경:**
+- `cudaErrorUnknown` vs `cudaErrorMemoryAllocation`: OOM은 프로세스 레벨로 `empty_cache()`로 복구 가능하지만, unknown error는 드라이버 레벨 오염으로 GPU 리셋 또는 리부팅이 필요
+- `config.GPU_AVAILABLE`은 `config.py` import 시점에 1회만 평가되는 상수. CUDA 실패 후에도 `True`로 유지되어 Ollama를 계속 GPU 모드로 재시작하는 것이 무한 루프의 직접 원인이었음
+- `nvidia-smi --gpu-reset`은 실행 중인 CUDA 프로세스가 없어야 동작함. Ollama를 먼저 종료(`pkill`)한 뒤 리셋해야 함
+
 ---
 
 ## 테스트 (pytest)

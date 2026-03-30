@@ -885,7 +885,7 @@ def generate_markdown_report(
             if comparisons:
                 a("### 상위 모델 직접 대결 결과")
                 a("")
-                top_models = [m for m, _ in sorted_elo[:6]]
+                top_models = [m for m, _ in sorted_elo]
                 win_matrix = {}
                 for c in comparisons:
                     ma, mb = c.get("model_a", ""), c.get("model_b", "")
