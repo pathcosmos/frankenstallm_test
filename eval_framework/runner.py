@@ -13,6 +13,29 @@ from typing import Optional
 from . import config
 from . import evafrill_runner
 
+# EVAFRILL HTTP/subprocess 모드 자동 선택
+_eva_http = evafrill_runner.use_http()
+
+
+def _eva_generate(prompt, system="", options=None, timeout=None):
+    if _eva_http:
+        return evafrill_runner.http_generate(
+            prompt=prompt, system=system, options=options, timeout=timeout)
+    return evafrill_runner.subprocess_generate(
+        prompt=prompt, system=system, options=options, timeout=timeout)
+
+
+def _eva_load() -> bool:
+    if _eva_http:
+        return evafrill_runner.http_health()
+    return evafrill_runner.subprocess_load_model()
+
+
+def _eva_unload():
+    if _eva_http:
+        return
+    evafrill_runner.subprocess_unload_model()
+
 
 def ollama_health_check() -> bool:
     """Ollama 서버 상태 확인"""
@@ -190,7 +213,7 @@ def unload_all_models() -> None:
     """모든 로딩된 모델 언로드 (Ollama + EVAFRILL)"""
     for model in get_loaded_models():
         unload_model(model)
-    evafrill_runner.subprocess_unload_model()
+    _eva_unload()
     time.sleep(2)
 
 
@@ -236,7 +259,7 @@ def generate(
 
     # EVAFRILL: subprocess 격리 추론 (CUDA 오류 → 메인 프로세스 보호)
     if evafrill_runner.is_evafrill(model):
-        return evafrill_runner.subprocess_generate(
+        return _eva_generate(
             prompt=prompt, system=system, options=options, timeout=timeout,
         )
 
@@ -319,7 +342,7 @@ def chat(
             elif role == "assistant":
                 parts.append(content)
         prompt = "\n".join(parts)
-        return evafrill_runner.subprocess_generate(
+        return _eva_generate(
             prompt=prompt, system=system_msg, options=options, timeout=timeout,
         )
 
@@ -385,10 +408,10 @@ def switch_model(new_model: str, current_model: Optional[str] = None) -> bool:
         # ollama_suspend: Ollama 정지하여 GPU 독점 확보
         if suspend:
             _stop_ollama()
-        if evafrill_runner.subprocess_load_model():
+        if _eva_load():
             return True
         print("  ❌ EVAFRILL 로딩 실패 (subprocess 격리)")
-        evafrill_runner.subprocess_unload_model()
+        _eva_unload()
         # 실패해도 Ollama 복구
         if suspend:
             _restart_ollama()
@@ -396,7 +419,7 @@ def switch_model(new_model: str, current_model: Optional[str] = None) -> bool:
 
     # EVAFRILL에서 Ollama 모델로 전환 시 subprocess 종료 + VRAM 해제
     if current_model and evafrill_runner.is_evafrill(current_model):
-        evafrill_runner.subprocess_unload_model()
+        _eva_unload()
         time.sleep(config.COOLDOWN_BETWEEN_MODELS)
         # ollama_suspend: EVAFRILL 완료 후 Ollama GPU 모드 재시작
         if suspend:

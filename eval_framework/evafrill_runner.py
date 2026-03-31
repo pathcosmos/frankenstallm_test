@@ -417,6 +417,78 @@ def subprocess_unload_model() -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# HTTP 원격 추론 (EVAFRILL_HTTP_URL 설정 시 활성화)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+import os as _os
+EVAFRILL_HTTP_URL = _os.getenv("EVAFRILL_HTTP_URL", "")  # e.g. "http://172.30.31.2:8000"
+
+_ERROR_RESPONSE = {
+    "response": "", "eval_count": 0, "eval_duration_s": 0,
+    "prompt_eval_count": 0, "prompt_eval_duration_s": 0,
+    "total_duration_s": 0, "wall_time_s": 0, "tokens_per_sec": 0,
+}
+
+
+def http_generate(
+    prompt: str,
+    system: str = "",
+    options: Optional[dict] = None,
+    timeout: Optional[int] = None,
+) -> dict:
+    """원격 EVAFRILL HTTP 서버에 추론 요청"""
+    import requests
+    try:
+        resp = requests.post(
+            f"{EVAFRILL_HTTP_URL}/generate",
+            json={
+                "prompt": prompt,
+                "system": system,
+                "options": options or dict(config.SAMPLING_PARAMS),
+            },
+            timeout=timeout or 600,
+        )
+        resp.raise_for_status()
+        return resp.json()
+    except Exception as e:
+        return {**_ERROR_RESPONSE, "error": f"HTTP error: {e}"}
+
+
+def http_load_model() -> bool:
+    """원격 서버에 모델 로딩 요청 (보통 서버 시작 시 자동 로딩됨)"""
+    import requests
+    try:
+        resp = requests.post(f"{EVAFRILL_HTTP_URL}/load", timeout=300)
+        return resp.json().get("ok", False)
+    except Exception:
+        return False
+
+
+def http_unload_model() -> None:
+    """원격 서버에 모델 언로딩 요청 (보통 불필요)"""
+    import requests
+    try:
+        requests.post(f"{EVAFRILL_HTTP_URL}/unload", timeout=30)
+    except Exception:
+        pass
+
+
+def http_health() -> bool:
+    """원격 서버 헬스체크"""
+    import requests
+    try:
+        resp = requests.get(f"{EVAFRILL_HTTP_URL}/", timeout=5)
+        return resp.json().get("model_loaded", False)
+    except Exception:
+        return False
+
+
+def use_http() -> bool:
+    """HTTP 원격 모드 활성화 여부"""
+    return bool(EVAFRILL_HTTP_URL)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # Worker 프로세스 메인 루프 (python -m eval_framework.evafrill_runner)
 # ═══════════════════════════════════════════════════════════════════════════════
 
