@@ -18,6 +18,7 @@ REPORTS_DIR.mkdir(exist_ok=True)
 
 # ── Ollama API ────────────────────────────────────────────────────────────────
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_REMOTE = os.getenv("OLLAMA_REMOTE", "").lower() in ("1", "true", "yes")
 OLLAMA_API_GENERATE = f"{OLLAMA_BASE_URL}/api/generate"
 OLLAMA_API_CHAT = f"{OLLAMA_BASE_URL}/api/chat"
 OLLAMA_API_SHOW = f"{OLLAMA_BASE_URL}/api/show"
@@ -87,7 +88,7 @@ def _gpu_available() -> bool:
     except Exception:
         return False
 
-GPU_AVAILABLE = _gpu_available()
+GPU_AVAILABLE = True if OLLAMA_REMOTE else _gpu_available()
 
 # EVAFRILL GPU 격리 전략
 #   "evafrill_cpu"    — EVAFRILL CPU 전용, Ollama GPU 유지 (안전, 기본값)

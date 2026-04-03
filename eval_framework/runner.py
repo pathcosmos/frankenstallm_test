@@ -57,7 +57,10 @@ def _gpu_healthy_now() -> bool:
 
     config.GPU_AVAILABLE은 import 시점 1회 캐시라 CUDA 오염 후에도 True를 반환한다.
     이 함수는 매 호출마다 nvidia-smi를 실행하여 실제 드라이버 상태를 확인한다.
+    Remote Ollama 모드에서는 로컬 GPU가 아닌 Ollama health check로 대체.
     """
+    if config.OLLAMA_REMOTE:
+        return ollama_health_check()
     try:
         r = subprocess.run(
             ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"],
@@ -73,7 +76,10 @@ def _try_gpu_reset() -> bool:
 
     root 권한 또는 GPU를 점유하는 CUDA 프로세스가 없는 상태에서만 성공한다.
     리셋 후 3초 대기 → _gpu_healthy_now()로 복구 확인.
+    Remote Ollama 모드에서는 건너뜀.
     """
+    if config.OLLAMA_REMOTE:
+        return True
     print("  🔧 GPU 리셋 시도 (nvidia-smi --gpu-reset)...")
     try:
         r = subprocess.run(
@@ -96,7 +102,11 @@ def _stop_ollama() -> None:
     """Ollama 서버를 2-phase로 완전 정지 (SIGTERM 5s → SIGKILL 3s).
 
     ollama_suspend 전략에서 EVAFRILL CUDA 실행 전 GPU VRAM을 해제하기 위해 사용.
+    Remote Ollama 모드에서는 로컬 제어 불가이므로 건너뜀.
     """
+    if config.OLLAMA_REMOTE:
+        print("  ℹ Remote Ollama 모드 — 로컬 정지 건너뜀")
+        return
     print("  🛑 Ollama 정지 (EVAFRILL GPU 격리)")
     subprocess.run(["pkill", "-f", "ollama serve"], capture_output=True, timeout=10)
     time.sleep(5)
@@ -110,7 +120,16 @@ def _restart_ollama() -> bool:
     FrankenstallM SPM 모델의 auto-load 크래시를 우회하기 위해
     매니페스트를 임시 이동 후 시작하고 복구한다.
     GPU 드라이버가 오염된 경우 CPU 모드로 폴백한다.
+    Remote Ollama 모드에서는 로컬 재시작 대신 연결 확인만 수행.
     """
+    if config.OLLAMA_REMOTE:
+        print("  ℹ Remote Ollama 모드 — 로컬 재시작 건너뜀, 연결 확인 중...")
+        for _ in range(5):
+            if ollama_health_check():
+                return True
+            time.sleep(3)
+        return ollama_health_check()
+
     import os
     from pathlib import Path
     print("  🔄 Ollama 서버 재시작 중...")

@@ -204,6 +204,55 @@ def fit_bradley_terry(
 
 # ── 종합 스코어 카드 ─────────────────────────────────────────────────────────
 
+def _extract_representative_score(track_name: str, val) -> float | None:
+    """트랙별 summary 값에서 대표 점수 하나를 추출한다."""
+    if not isinstance(val, dict):
+        return val
+
+    # mean / elo 키가 있으면 그대로
+    if "mean" in val:
+        return val["mean"]
+    if "elo" in val:
+        return val["elo"]
+
+    # Track 1: 카테고리별 accuracy → 전체 평균
+    # e.g. {"kmmlu": 0.86, "kobest_boolq": 1.0, ...}
+    if track_name == "track1":
+        nums = [v for v in val.values() if isinstance(v, (int, float))]
+        return round(sum(nums) / len(nums), 4) if nums else None
+
+    # Track 3: 카테고리별 {accuracy, avg_score, n} → n 가중 avg_score 평균
+    if track_name == "track3":
+        total_n, weighted = 0, 0.0
+        for cat_data in val.values():
+            if isinstance(cat_data, dict) and "avg_score" in cat_data:
+                n = cat_data.get("n", 1)
+                weighted += cat_data["avg_score"] * n
+                total_n += n
+        return round(weighted / total_n, 4) if total_n else None
+
+    # Track 5: 메트릭별 float → 평균
+    if track_name == "track5":
+        nums = [v for v in val.values() if isinstance(v, (int, float))]
+        return round(sum(nums) / len(nums), 4) if nums else None
+
+    # Track 6: 성능 → decode tok/s 대표값
+    if track_name == "track6":
+        return val.get("avg_decode_tok_s")
+
+    # Track 2: {category: {turn1_mean, turn2_mean, overall_mean}} → overall_mean 평균
+    if track_name == "track2":
+        means = []
+        for cat_data in val.values():
+            if isinstance(cat_data, dict) and "overall_mean" in cat_data:
+                means.append(cat_data["overall_mean"])
+        return round(sum(means) / len(means), 4) if means else None
+
+    # 기타: 숫자 값들의 평균
+    nums = [v for v in val.values() if isinstance(v, (int, float))]
+    return round(sum(nums) / len(nums), 4) if nums else 0
+
+
 def build_scorecard(track_results: dict[str, dict]) -> dict[str, dict]:
     """
     모든 트랙 결과를 하나의 스코어카드로 통합
@@ -216,11 +265,9 @@ def build_scorecard(track_results: dict[str, dict]) -> dict[str, dict]:
         scorecard[model] = {"model": model}
         for track_name, data in track_results.items():
             if model in data:
-                val = data[model]
-                if isinstance(val, dict):
-                    scorecard[model][track_name] = val.get("mean", val.get("elo", 0))
-                else:
-                    scorecard[model][track_name] = val
+                score = _extract_representative_score(track_name, data[model])
+                if score is not None:
+                    scorecard[model][track_name] = score
 
     return scorecard
 

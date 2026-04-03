@@ -97,18 +97,40 @@ def run_tracks(track_nums: list[int], models: list[str] | None = None) -> dict:
 
 
 def load_existing_results() -> dict:
-    """기존 결과 파일에서 로드"""
+    """기존 결과 파일에서 로드 — 여러 파일의 summary/results를 병합"""
     results = {}
     for path in sorted(config.RESULTS_DIR.glob("track*_2*.json")):
         try:
             with open(path, encoding="utf-8") as f:
                 data = json.load(f)
-            # 파일명에서 트랙 번호 추출
             track_name = path.stem.split("_")[0]
             if track_name not in results:
                 results[track_name] = data
+            else:
+                existing = results[track_name]
+                # summary 병합 — 빈 값은 기존 데이터를 덮어쓰지 않음
+                if isinstance(data.get("summary"), dict) and isinstance(existing.get("summary"), dict):
+                    for model, val in data["summary"].items():
+                        if val:
+                            existing["summary"][model] = val
+                # results 병합
+                if isinstance(data.get("results"), dict) and isinstance(existing.get("results"), dict):
+                    existing["results"].update(data["results"])
+                elif isinstance(data.get("results"), list) and isinstance(existing.get("results"), list):
+                    # 최신 파일의 모델 데이터로 교체 (채점 업데이트 반영)
+                    new_models = {r.get("model") for r in data["results"]}
+                    existing["results"] = [
+                        r for r in existing["results"] if r.get("model") not in new_models
+                    ] + data["results"]
         except Exception as e:
             print(f"  ⚠ {path.name} 로드 실패: {e}")
+
+    # T2: list 타입 results에서 summary 재빌드
+    for track_name, track_data in results.items():
+        if isinstance(track_data.get("results"), list) and track_name == "track2":
+            from eval_framework.tracks.track2_ko_bench import _build_summary
+            track_data["summary"] = _build_summary(track_data["results"])
+
     return results
 
 
